@@ -34,9 +34,9 @@ class ServerConfigTest {
         ServerConfig config = new ServerConfig(8080, validMapConfig, 15000L);
         
         // Assert
-        assertEquals(8080, config.getPort());
-        assertEquals(validMapConfig, config.getMapConfig());
-        assertEquals(15000L, config.getTurnTimeLimit());
+        assertEquals(8080, config.port());
+        assertEquals(validMapConfig, config.mapConfig());
+        assertEquals(15000L, config.turnTimeLimit());
     }
     
     @Test
@@ -45,9 +45,9 @@ class ServerConfigTest {
         ServerConfig config = new ServerConfig(validMapConfig);
         
         // Assert
-        assertEquals(8080, config.getPort()); // Default port
-        assertEquals(15000L, config.getTurnTimeLimit()); // Default turn time limit
-        assertEquals(validMapConfig, config.getMapConfig());
+        assertEquals(8080, config.port()); // Default port
+        assertEquals(15000L, config.turnTimeLimit()); // Default turn time limit
+        assertEquals(validMapConfig, config.mapConfig());
     }
     
     @Test
@@ -70,7 +70,7 @@ class ServerConfigTest {
         ServerConfig config = new ServerConfig(1024, validMapConfig, 15000L);
         
         // Assert
-        assertEquals(1024, config.getPort());
+        assertEquals(1024, config.port());
     }
     
     @Test
@@ -79,7 +79,7 @@ class ServerConfigTest {
         ServerConfig config = new ServerConfig(65535, validMapConfig, 15000L);
         
         // Assert
-        assertEquals(65535, config.getPort());
+        assertEquals(65535, config.port());
     }
     
     @Test

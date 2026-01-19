@@ -1,5 +1,6 @@
 package sl.hackathon.server.orchestration;
 
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.communication.ClientRegistry;
@@ -19,6 +20,7 @@ import sl.hackathon.server.engine.GameEngine;
  * - Coordinate GameSession thread execution
  * - Handle component shutdown
  */
+@Getter
 public class GameServer {
     private static final Logger logger = LoggerFactory.getLogger(GameServer.class);
     
@@ -47,7 +49,7 @@ public class GameServer {
         this.config = config;
         this.gameEngine = gameEngine;
         this.clientRegistry = new ClientRegistry();
-        this.webSocketServer = new WebSocketServerContainer(config.getPort());
+        this.webSocketServer = new WebSocketServerContainer(config.port());
         
         wireHandlers();
     }
@@ -102,12 +104,12 @@ public class GameServer {
         try {
             // Start WebSocket server
             webSocketServer.start();
-            logger.info("WebSocket server started on port {}", config.getPort());
+            logger.info("WebSocket server started on port {}", config.port());
             
             // Create GameParams
             GameParams gameParams = new GameParams(
-                config.getMapConfig(),
-                config.getTurnTimeLimit(),
+                config.mapConfig(),
+                config.turnTimeLimit(),
                 0.3f // default food scarcity
             );
             
@@ -169,23 +171,5 @@ public class GameServer {
      */
     public boolean isRunning() {
         return webSocketServer.isRunning();
-    }
-    
-    /**
-     * Gets the server configuration.
-     * 
-     * @return the server configuration
-     */
-    public ServerConfig getConfig() {
-        return config;
-    }
-    
-    /**
-     * Gets the game session.
-     * 
-     * @return the game session, or null if not started
-     */
-    public GameSession getGameSession() {
-        return gameSession;
     }
 }

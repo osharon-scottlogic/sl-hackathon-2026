@@ -1,5 +1,6 @@
 package sl.hackathon.client.api;
 
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.client.dtos.Action;
@@ -23,11 +24,11 @@ public class ServerAPI {
     private final WebSocketTransport transport;
 
     // Message handlers (delegated via internal MessageHandler)
-    Consumer<StartGameMessage> onGameStart;
-    Consumer<NextTurnMessage> onNextTurn;
-    Consumer<EndGameMessage> onGameEnd;
-    Consumer<InvalidOperationMessage> onInvalidOperation;
-    Consumer<Throwable> onError;
+    @Setter Consumer<StartGameMessage> onGameStart;
+    @Setter Consumer<NextTurnMessage> onNextTurn;
+    @Setter Consumer<EndGameMessage> onGameEnd;
+    @Setter Consumer<InvalidOperationMessage> onInvalidOperation;
+    @Setter Consumer<Throwable> onError;
     
     public ServerAPI() {
         this.transport = new WebSocketTransport();
@@ -94,28 +95,6 @@ public class ServerAPI {
      */
     public boolean isConnected() {
         return transport.isConnected();
-    }
-    
-    // Message handler setters
-    
-    public void setOnGameStart(Consumer<StartGameMessage> handler) {
-        this.onGameStart = handler;
-    }
-    
-    public void setOnNextTurn(Consumer<NextTurnMessage> handler) {
-        this.onNextTurn = handler;
-    }
-    
-    public void setOnGameEnd(Consumer<EndGameMessage> handler) {
-        this.onGameEnd = handler;
-    }
-    
-    public void setOnInvalidOperation(Consumer<InvalidOperationMessage> handler) {
-        this.onInvalidOperation = handler;
-    }
-    
-    public void setOnError(Consumer<Throwable> handler) {
-        this.onError = handler;
     }
     
     /**

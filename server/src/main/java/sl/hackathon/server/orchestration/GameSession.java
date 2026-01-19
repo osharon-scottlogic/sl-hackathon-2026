@@ -1,5 +1,6 @@
 package sl.hackathon.server.orchestration;
 
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.communication.ClientRegistry;
@@ -34,7 +35,11 @@ public class GameSession implements Runnable {
     private final GameParams gameParams;
     
     private volatile boolean shutdown = false;
+    
+    @Getter
     private volatile boolean gameStarted = false;
+    
+    @Getter
     private volatile int currentTurnId = 0;
     
     // Store actions submitted by players for the current turn
@@ -101,24 +106,6 @@ public class GameSession implements Runnable {
         if (turnLatch != null) {
             turnLatch.countDown();
         }
-    }
-    
-    /**
-     * Checks if the game has started.
-     * 
-     * @return true if game initialization is complete
-     */
-    public boolean isGameStarted() {
-        return gameStarted;
-    }
-    
-    /**
-     * Gets the current turn ID.
-     * 
-     * @return the current turn ID (0-based)
-     */
-    public int getCurrentTurnId() {
-        return currentTurnId;
     }
     
     @Override

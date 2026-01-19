@@ -1,6 +1,7 @@
 package sl.hackathon.client.transport;
 
 import jakarta.websocket.*;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +26,10 @@ public class WebSocketTransport {
     private CountDownLatch connectLatch;
     
     // Callbacks for transport events
-    private Consumer<String> onMessageReceived;
-    private Consumer<Throwable> onError;
-    private Runnable onConnected;
-    private Runnable onDisconnected;
+    @Setter private Consumer<String> onMessageReceived;
+    @Setter private Consumer<Throwable> onError;
+    @Setter private Runnable onConnected;
+    @Setter private Runnable onDisconnected;
     
     public WebSocketTransport() {
         this.state = TransportState.DISCONNECTED;
@@ -123,44 +124,6 @@ public class WebSocketTransport {
      */
     public boolean isConnected() {
         return state == TransportState.CONNECTED && session != null && session.isOpen();
-    }
-    
-    // Callback setters
-    
-    /**
-     * Sets the callback for when a message is received.
-     * 
-     * @param handler callback that accepts the received message text
-     */
-    public void setOnMessageReceived(Consumer<String> handler) {
-        this.onMessageReceived = handler;
-    }
-    
-    /**
-     * Sets the callback for when an error occurs.
-     * 
-     * @param handler callback that accepts the error
-     */
-    public void setOnError(Consumer<Throwable> handler) {
-        this.onError = handler;
-    }
-    
-    /**
-     * Sets the callback for when connection is established.
-     * 
-     * @param handler callback to run on successful connection
-     */
-    public void setOnConnected(Runnable handler) {
-        this.onConnected = handler;
-    }
-    
-    /**
-     * Sets the callback for when connection is closed.
-     * 
-     * @param handler callback to run on disconnection
-     */
-    public void setOnDisconnected(Runnable handler) {
-        this.onDisconnected = handler;
     }
     
     /**

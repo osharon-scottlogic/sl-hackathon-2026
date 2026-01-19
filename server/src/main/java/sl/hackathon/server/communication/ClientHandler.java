@@ -1,6 +1,8 @@
 package sl.hackathon.server.communication;
 
 import jakarta.websocket.Session;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.Message;
@@ -20,11 +22,14 @@ import java.util.function.BiConsumer;
  * - Handles errors gracefully
  * - Manages connection lifecycle
  */
+@Getter
 public class ClientHandler {
     private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
     
     private final String clientId;
     private final Session session;
+    
+    @Setter
     private BiConsumer<String, Message> messageCallback;
     
     /**
@@ -44,40 +49,12 @@ public class ClientHandler {
     }
     
     /**
-     * Gets the unique client ID.
-     * 
-     * @return the client ID
-     */
-    public String getClientId() {
-        return clientId;
-    }
-    
-    /**
-     * Gets the underlying WebSocket session.
-     * 
-     * @return the WebSocket session
-     */
-    public Session getSession() {
-        return session;
-    }
-    
-    /**
      * Checks if the WebSocket connection is currently open.
      * 
      * @return true if the connection is open, false otherwise
      */
     public boolean isOpen() {
         return session != null && session.isOpen();
-    }
-    
-    /**
-     * Sets the callback to be invoked when a message is received.
-     * The callback receives the client ID and the deserialized message.
-     * 
-     * @param callback the callback to invoke (clientId, message) -> void
-     */
-    public void setMessageCallback(BiConsumer<String, Message> callback) {
-        this.messageCallback = callback;
     }
     
     /**
