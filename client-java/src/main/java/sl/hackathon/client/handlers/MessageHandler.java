@@ -9,6 +9,14 @@ import sl.hackathon.client.messages.*;
 public interface MessageHandler {
     
     /**
+     * Handles the player assigned message.
+     * Called when the server assigns a player ID to this client.
+     * 
+     * @param message the player assigned message containing the assigned player ID
+     */
+    void handlePlayerAssigned(PlayerAssignedMessage message);
+    
+    /**
      * Handles the game start message.
      * Called when the server indicates the game has begun.
      * 

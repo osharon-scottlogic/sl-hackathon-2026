@@ -4,8 +4,11 @@ import jakarta.websocket.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.Message;
+import sl.hackathon.server.dtos.MessageCodec;
+import sl.hackathon.server.dtos.PlayerAssignedMessage;
 
 import jakarta.websocket.server.ServerEndpoint;
+import java.io.IOException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -129,6 +132,12 @@ public class WebSocketAdapter {
             playerId = clientRegistry.register(clientHandler);
             logger.info("Client {} registered as {}", clientHandler.getClientId(), playerId);
             
+            // Send player assignment message to client
+            PlayerAssignedMessage playerAssignedMsg = new PlayerAssignedMessage(playerId);
+            String assignmentJson = MessageCodec.serialize(playerAssignedMsg);
+            clientHandler.send(assignmentJson);
+            logger.info("Sent player assignment to {}", playerId);
+
             // Invoke connection callback
             if (onClientConnectCallback != null) {
                 onClientConnectCallback.accept(playerId);

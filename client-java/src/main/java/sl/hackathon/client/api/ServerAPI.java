@@ -25,6 +25,7 @@ public class ServerAPI {
 
     // Message handlers (delegated via internal MessageHandler)
     @Setter Consumer<StartGameMessage> onGameStart;
+    @Setter Consumer<PlayerAssignedMessage> onPlayerAssigned;
     @Setter Consumer<NextTurnMessage> onNextTurn;
     @Setter Consumer<EndGameMessage> onGameEnd;
     @Setter Consumer<InvalidOperationMessage> onInvalidOperation;
@@ -101,7 +102,15 @@ public class ServerAPI {
      * Internal message handler that delegates to the registered callbacks.
      */
     private class InternalMessageHandler implements MessageHandler {
-        
+
+        @Override
+        public void handlePlayerAssigned(PlayerAssignedMessage message) {
+            logger.info("Player assigned: {}", message.getPlayerId());
+            if (onPlayerAssigned != null) {
+                onPlayerAssigned.accept(message);
+            }
+        }
+
         @Override
         public void handleStartGame(StartGameMessage message) {
             logger.info("Game started");

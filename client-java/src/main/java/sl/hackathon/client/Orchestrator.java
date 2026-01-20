@@ -75,12 +75,32 @@ public class Orchestrator {
      */
     private void wireCallbacks() {
         serverAPI.setOnGameStart(this::handleGameStart);
+        serverAPI.setOnPlayerAssigned(this::handlePlayerAssigned);
         serverAPI.setOnNextTurn(this::handleNextTurn);
         serverAPI.setOnGameEnd(this::handleGameEnd);
         serverAPI.setOnInvalidOperation(this::handleInvalidOperation);
         serverAPI.setOnError(this::handleError);
     }
-    
+
+    /**
+     * Handles player assignment message from server.
+     * Updates the orchestrator's player ID with the server-assigned value.
+     * 
+     * @param message the player assigned message containing the server-assigned player ID
+     */
+    private void handlePlayerAssigned(PlayerAssignedMessage message) {
+        String assignedPlayerId = message.getPlayerId();
+        logger.info("Received player assignment: {}", assignedPlayerId);
+        
+        // Update player ID with server-assigned value
+        if (assignedPlayerId != null && !assignedPlayerId.isBlank()) {
+            this.playerId = assignedPlayerId;
+            logger.info("Player ID updated to: {}", this.playerId);
+        } else {
+            logger.warn("Received invalid player ID assignment");
+        }
+    }
+
     /**
      * Handles game start message from server.
      * Initializes map layout and game state.

@@ -53,7 +53,6 @@ public class HelperTools {
 
             for (int i = 0; i < 8; i++) {
                 Position next = getNextPosition(current, i, map, walls);
-                System.out.println(">>> "+ current +" > "+next);
                 if (next != null && !visited.contains(next)) {
                     visited.add(next);
                     parent.put(next, current);

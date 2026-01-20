@@ -33,6 +33,25 @@ class GameMessageRouterTest {
     }
     
     @Test
+    void testRoutePlayerAssignedMessage() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<PlayerAssignedMessage> receivedMsg = new AtomicReference<>();
+        
+        testHandler.setOnPlayerAssigned(msg -> {
+            receivedMsg.set(msg);
+            latch.countDown();
+        });
+        
+        PlayerAssignedMessage message = new PlayerAssignedMessage("player-1");
+        
+        router.routeMessage(message);
+        
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertEquals(1, testHandler.playerAssignedCount.get());
+        assertEquals("player-1", receivedMsg.get().getPlayerId());
+    }
+    
+    @Test
     void testRouteStartGameMessage() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         
@@ -253,17 +272,23 @@ class GameMessageRouterTest {
      */
     private static class TestMessageHandler implements MessageHandler {
         
+        final AtomicInteger playerAssignedCount = new AtomicInteger(0);
         final AtomicInteger startGameCount = new AtomicInteger(0);
         final AtomicInteger nextTurnCount = new AtomicInteger(0);
         final AtomicInteger endGameCount = new AtomicInteger(0);
         final AtomicInteger invalidOperationCount = new AtomicInteger(0);
         final AtomicInteger errorCount = new AtomicInteger(0);
         
+        private java.util.function.Consumer<PlayerAssignedMessage> onPlayerAssigned;
         private java.util.function.Consumer<StartGameMessage> onStartGame;
         private java.util.function.Consumer<NextTurnMessage> onNextTurn;
         private java.util.function.Consumer<EndGameMessage> onEndGame;
         private java.util.function.Consumer<InvalidOperationMessage> onInvalidOperation;
         private java.util.function.Consumer<Throwable> onError;
+        
+        void setOnPlayerAssigned(java.util.function.Consumer<PlayerAssignedMessage> handler) {
+            this.onPlayerAssigned = handler;
+        }
         
         void setOnStartGame(java.util.function.Consumer<StartGameMessage> handler) {
             this.onStartGame = handler;
@@ -284,7 +309,15 @@ class GameMessageRouterTest {
         void setOnError(java.util.function.Consumer<Throwable> handler) {
             this.onError = handler;
         }
-        
+
+        @Override
+        public void handlePlayerAssigned(PlayerAssignedMessage message) {
+            playerAssignedCount.incrementAndGet();
+            if (onPlayerAssigned != null) {
+                onPlayerAssigned.accept(message);
+            }
+        }
+
         @Override
         public void handleStartGame(StartGameMessage message) {
             startGameCount.incrementAndGet();

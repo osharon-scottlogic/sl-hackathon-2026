@@ -18,9 +18,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @JsonSubTypes.Type(value = StartGameMessage.class, name = "START_GAME"),
     @JsonSubTypes.Type(value = NextTurnMessage.class, name = "NEXT_TURN"),
     @JsonSubTypes.Type(value = EndGameMessage.class, name = "END_GAME"),
-    @JsonSubTypes.Type(value = InvalidOperationMessage.class, name = "INVALID_OPERATION")
+    @JsonSubTypes.Type(value = InvalidOperationMessage.class, name = "INVALID_OPERATION"),
+    @JsonSubTypes.Type(value = PlayerAssignedMessage.class, name = "PLAYER_ASSIGNED")
 })
-public sealed class Message permits ActionMessage, JoinGameMessage, StartGameMessage, NextTurnMessage, EndGameMessage, InvalidOperationMessage {
+public sealed class Message permits ActionMessage, JoinGameMessage, StartGameMessage, NextTurnMessage, EndGameMessage, InvalidOperationMessage, PlayerAssignedMessage {
     /**
      * Protected constructor to prevent direct instantiation.
      */

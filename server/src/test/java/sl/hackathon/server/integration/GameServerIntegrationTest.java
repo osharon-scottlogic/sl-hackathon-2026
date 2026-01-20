@@ -121,6 +121,15 @@ class GameServerIntegrationTest {
         assertTrue(session1.isOpen(), "Client 1 session should be open");
         assertTrue(session2.isOpen(), "Client 2 session should be open");
         
+        // Wait for player assigned messages first
+        Message playerMsg1 = client1.waitForMessage(5000);
+        Message playerMsg2 = client2.waitForMessage(5000);
+        
+        assertNotNull(playerMsg1, "Client 1 should receive player assignment");
+        assertNotNull(playerMsg2, "Client 2 should receive player assignment");
+        assertInstanceOf(PlayerAssignedMessage.class, playerMsg1);
+        assertInstanceOf(PlayerAssignedMessage.class, playerMsg2);
+        
         // Wait for game start message
         Message startMsg1 = client1.waitForMessage(5000);
         Message startMsg2 = client2.waitForMessage(5000);
@@ -197,30 +206,54 @@ class GameServerIntegrationTest {
         // Verify message sequence for client 1
         List<Message> client1Messages = new ArrayList<>();
         
-        // Should receive StartGameMessage first
+        // Client 1: Should receive PlayerAssignedMessage first
         Message msg = client1.waitForMessage(5000);
-        assertNotNull(msg);
-        assertInstanceOf(StartGameMessage.class, msg);
+        assertNotNull(msg, "Client 1 should receive player assignment");
+        assertInstanceOf(PlayerAssignedMessage.class, msg, "First message should be PlayerAssignedMessage but got: " + msg.getClass().getSimpleName());
         client1Messages.add(msg);
         
-        // Should receive NextTurnMessage next
-        msg = client1.waitForMessage(5000);
-        assertNotNull(msg);
-        assertInstanceOf(NextTurnMessage.class, msg);
+        // Client 2: Should also receive PlayerAssignedMessage
+        Message msg2 = client2.waitForMessage(1000);
+        assertNotNull(msg2, "Client 2 should receive player assignment");
+        assertInstanceOf(PlayerAssignedMessage.class, msg2);
+        
+        // Client 1: Should receive StartGameMessage second
+        msg = client1.waitForMessage(1000);
+        assertNotNull(msg, "Client 1 should receive game start");
+        assertInstanceOf(StartGameMessage.class, msg, "Second message should be StartGameMessage but got: " + msg.getClass().getSimpleName());
         client1Messages.add(msg);
         
-        // Send action
-        NextTurnMessage turnMsg = (NextTurnMessage) msg;
-        client1.sendMessage(new ActionMessage(turnMsg.getPlayerId(), new Action[]{}));
-        client2.sendMessage(new ActionMessage(turnMsg.getPlayerId(), new Action[]{}));
+        // Client 2: Should also receive StartGameMessage
+        msg2 = client2.waitForMessage(1000);
+        assertNotNull(msg2, "Client 2 should receive game start");
+        assertInstanceOf(StartGameMessage.class, msg2);
+        
+        // Client 1: Should receive NextTurnMessage third
+        msg = client1.waitForMessage(1000);
+        assertNotNull(msg, "Client 1 should receive next turn");
+        assertInstanceOf(NextTurnMessage.class, msg, "Third message should be NextTurnMessage but got: " + msg.getClass().getSimpleName());
+        client1Messages.add(msg);
+        
+        // Client 2: Should also receive NextTurnMessage
+        msg2 = client2.waitForMessage(1000);
+        assertNotNull(msg2, "Client 2 should receive next turn");
+        assertInstanceOf(NextTurnMessage.class, msg2);
+        
+        // Send actions from both clients with their correct player IDs
+        NextTurnMessage turnMsg1 = (NextTurnMessage) msg;
+        NextTurnMessage turnMsg2 = (NextTurnMessage) msg2;
+        
+        client1.sendMessage(new ActionMessage(turnMsg1.getPlayerId(), new Action[]{}));
+        client2.sendMessage(new ActionMessage(turnMsg2.getPlayerId(), new Action[]{}));
         
         // Wait a bit to see if we receive another turn or end game
         Thread.sleep(1000);
         
         // Verify sequence is correct
-        assertTrue(client1Messages.size() >= 2, "Should have received at least 2 messages");
-        assertInstanceOf(StartGameMessage.class, client1Messages.get(0));
-        assertInstanceOf(NextTurnMessage.class, client1Messages.get(1));
+        assertTrue(client1Messages.size() >= 3, "Should have received at least 3 messages");
+        assertInstanceOf(PlayerAssignedMessage.class, client1Messages.get(0));
+        assertInstanceOf(StartGameMessage.class, client1Messages.get(1));
+        assertInstanceOf(NextTurnMessage.class, client1Messages.get(2));
     }
     
     @Test
@@ -232,8 +265,17 @@ class GameServerIntegrationTest {
         client1.connect(SERVER_URL);
         client2.connect(SERVER_URL);
 
+        // Skip PlayerAssignedMessage for both clients
+        Message playerMsg1 = client1.waitForMessage(10000);
+        assertNotNull(playerMsg1);
+        assertInstanceOf(PlayerAssignedMessage.class, playerMsg1);
+        
+        Message playerMsg2 = client2.waitForMessage(5000);
+        assertNotNull(playerMsg2);
+        assertInstanceOf(PlayerAssignedMessage.class, playerMsg2);
+        
         // Get start messages
-        StartGameMessage start1 = (StartGameMessage) client1.waitForMessage(10000);
+        StartGameMessage start1 = (StartGameMessage) client1.waitForMessage(5000);
         StartGameMessage start2 = (StartGameMessage) client2.waitForMessage(5000);
         
         assertNotNull(start1);

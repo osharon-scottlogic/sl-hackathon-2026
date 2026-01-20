@@ -62,6 +62,10 @@ public class GameMessageRouter {
         
         try {
             switch (message) {
+                case PlayerAssignedMessage msg -> {
+                    logger.info("Routing PlayerAssignedMessage for player: {}", msg.getPlayerId());
+                    messageHandler.handlePlayerAssigned(msg);
+                }
                 case StartGameMessage msg -> {
                     logger.info("Routing StartGameMessage");
                     messageHandler.handleStartGame(msg);
