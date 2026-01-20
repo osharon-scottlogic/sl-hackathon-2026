@@ -1,6 +1,9 @@
 package sl.hackathon.server.engine;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.*;
+import sl.hackathon.server.orchestration.GameSession;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -9,6 +12,8 @@ import java.util.stream.Collectors;
  * Implementation of GameStatusUpdater that handles state updates and collision resolution.
  */
 public class GameStatusUpdaterImpl implements GameStatusUpdater {
+
+    private static final Logger logger = LoggerFactory.getLogger(GameStatusUpdaterImpl.class);
 
     /**
      * Updates the game state by applying a set of actions and resolving collisions.
@@ -68,7 +73,7 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
         // Build final unit list
         List<Unit> finalUnits = movedUnits.values().stream()
             .filter(unit -> !unitsToRemove.contains(unit.id()))
-            .collect(Collectors.toList());
+            .toList();
 
         return new GameState(finalUnits.toArray(new Unit[0]), gameState.startAt());
     }

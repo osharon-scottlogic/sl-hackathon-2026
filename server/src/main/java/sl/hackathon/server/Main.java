@@ -50,6 +50,7 @@ public class Main {
                 try {
                     gameServer.stop();
                     logger.info("Server stopped successfully");
+                    System.exit(0);
                 } catch (Exception e) {
                     logger.error("Error during server shutdown", e);
                 }

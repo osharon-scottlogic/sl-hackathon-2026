@@ -1,5 +1,7 @@
 package sl.hackathon.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -30,7 +32,8 @@ public class Orchestrator {
     private static final Logger logger = LoggerFactory.getLogger(Orchestrator.class);
     private static final long TIMEOUT_BUFFER_MS = 1000L; // 1 second safety buffer
     private static final String GAME_LOGS_DIR = "./game-logs/";
-    
+    private static final ObjectMapper objectMapper = JsonMapper.builder().build();
+
     private ServerAPI serverAPI;
     private Bot bot;
     private String playerId;
@@ -294,12 +297,8 @@ public class Orchestrator {
             writer.write("  \"playerId\": \"" + playerId + "\",\n");
             writer.write("  \"winner\": \"" + (statusUpdate.winnerId() != null ? statusUpdate.winnerId() : "none") + "\",\n");
             writer.write("  \"status\": \"" + statusUpdate.status() + "\",\n");
-            writer.write("  \"timestamp\": " + timestamp + "\n");
-            writer.write("  \"turns\": [\n");
-            for (int i=0;i<statusUpdate.history().length;i++) {
-                writer.write("  \t" + statusUpdate.history()[i].toString());
-            }
-            writer.write("  ],\n");
+            writer.write("  \"timestamp\": " + timestamp + "\n,");
+            writer.write("  \"turns\": \n" + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(statusUpdate.history()) +"\n");
             writer.write("}\n");
         }
         return filename;

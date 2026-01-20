@@ -266,6 +266,6 @@ public class GameSession implements Runnable {
         EndGameMessage endMessage = new EndGameMessage(statusUpdate);
         clientRegistry.broadcast(endMessage);
         
-        logger.info("End game message broadcast. Winner: {}", gameEngine.getWinnerId());
+        logger.info("End game message broadcast. Winner: {} after {} turns", gameEngine.getWinnerId(), gameEngine.getGameStateHistory().size());
     }
 }
