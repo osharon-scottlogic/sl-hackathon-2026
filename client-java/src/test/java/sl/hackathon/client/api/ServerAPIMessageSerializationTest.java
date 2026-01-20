@@ -51,15 +51,27 @@ class ServerAPIMessageSerializationTest {
             System.currentTimeMillis()
         );
         
-        StartGameMessage original = new StartGameMessage(state);
+        MapLayout mapLayout = new MapLayout(
+            new Dimension(20, 20),
+            new Position[]{new Position(10, 10)}
+        );
+        
+        GameStatusUpdate statusUpdate = new GameStatusUpdate(
+            GameStatus.START,
+            mapLayout,
+            new GameState[]{state},
+            null
+        );
+        
+        StartGameMessage original = new StartGameMessage(statusUpdate);
         String json = MessageCodec.serialize(original);
         Message deserialized = MessageCodec.deserialize(json);
         
         assertInstanceOf(StartGameMessage.class, deserialized);
         StartGameMessage result = (StartGameMessage) deserialized;
-        assertNotNull(result.getGameState());
-        assertEquals(1, result.getGameState().units().length);
-        assertEquals("u1", result.getGameState().units()[0].id());
+        assertNotNull(result.getGameStatusUpdate());
+        assertEquals(1, result.getGameStatusUpdate().history().length);
+        assertEquals("u1", result.getGameStatusUpdate().history()[0].units()[0].id());
     }
     
     @Test
@@ -145,17 +157,30 @@ class ServerAPIMessageSerializationTest {
         };
         
         GameState state = new GameState(units, System.currentTimeMillis());
-        StartGameMessage original = new StartGameMessage(state);
+        
+        MapLayout mapLayout = new MapLayout(
+            new Dimension(20, 20),
+            new Position[]{new Position(10, 10)}
+        );
+        
+        GameStatusUpdate statusUpdate = new GameStatusUpdate(
+            GameStatus.START,
+            mapLayout,
+            new GameState[]{state},
+            null
+        );
+        
+        StartGameMessage original = new StartGameMessage(statusUpdate);
         
         String json = MessageCodec.serialize(original);
         Message deserialized = MessageCodec.deserialize(json);
         
         assertInstanceOf(StartGameMessage.class, deserialized);
         StartGameMessage result = (StartGameMessage) deserialized;
-        assertEquals(4, result.getGameState().units().length);
+        assertEquals(4, result.getGameStatusUpdate().history()[0].units().length);
         
         // Verify FOOD unit has no owner
-        Unit foodUnit = result.getGameState().units()[3];
+        Unit foodUnit = result.getGameStatusUpdate().history()[0].units()[3];
         assertEquals(UnitType.FOOD, foodUnit.type());
         assertNull(foodUnit.owner());
     }

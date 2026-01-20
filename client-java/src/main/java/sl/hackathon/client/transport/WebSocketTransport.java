@@ -1,9 +1,11 @@
 package sl.hackathon.client.transport;
 
 import jakarta.websocket.*;
+import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sl.hackathon.client.api.TransportState;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,9 +24,14 @@ public class WebSocketTransport {
     private static final int CONNECTION_TIMEOUT_SECONDS = 10;
     
     private Session session;
+    /**
+     * -- GETTER --
+     *  Gets the current transport state.
+     */
+    @Getter
     private TransportState state;
     private CountDownLatch connectLatch;
-    
+
     // Callbacks for transport events
     @Setter private Consumer<String> onMessageReceived;
     @Setter private Consumer<Throwable> onError;
@@ -111,37 +118,30 @@ public class WebSocketTransport {
             state = TransportState.DISCONNECTED;
         }
     }
-    
-    /**
-     * Gets the current transport state.
-     */
-    public TransportState getState() {
-        return state;
-    }
-    
+
     /**
      * Checks if transport is currently connected.
      */
     public boolean isConnected() {
         return state == TransportState.CONNECTED && session != null && session.isOpen();
     }
-    
+
     /**
      * WebSocket client endpoint implementation.
      */
     @ClientEndpoint
-    private class WebSocketClientEndpoint {
-        
+    public class WebSocketClientEndpoint {
+
         @OnOpen
         public void onOpen(Session session) {
             logger.debug("WebSocket connection opened: {}", session.getId());
             connectLatch.countDown();
         }
-        
+
         @OnMessage
         public void onMessage(String message) {
             logger.debug("Received message: {}", message.length() > 100 ? message.substring(0, 100) + "..." : message);
-            
+
             if (onMessageReceived != null) {
                 try {
                     onMessageReceived.accept(message);
@@ -153,35 +153,26 @@ public class WebSocketTransport {
                 }
             }
         }
-        
+
         @OnClose
         public void onClose(Session session, CloseReason closeReason) {
-            logger.info("WebSocket connection closed: {} - {}", 
-                closeReason.getCloseCode(), 
-                closeReason.getReasonPhrase());
-            state = TransportState.DISCONNECTED;
-            
+            logger.info("WebSocket connection closed: {} - {}",
+                    closeReason.getCloseCode(),
+                    closeReason.getReasonPhrase());
+            state = sl.hackathon.client.api.TransportState.DISCONNECTED;
+
             if (onDisconnected != null) {
                 onDisconnected.run();
             }
         }
-        
+
         @OnError
         public void onError(Session session, Throwable throwable) {
             logger.error("WebSocket error occurred", throwable);
-            
+
             if (WebSocketTransport.this.onError != null) {
                 WebSocketTransport.this.onError.accept(throwable);
             }
         }
-    }
-    
-    /**
-     * Transport state enumeration.
-     */
-    public enum TransportState {
-        DISCONNECTED,
-        CONNECTING,
-        CONNECTED
     }
 }

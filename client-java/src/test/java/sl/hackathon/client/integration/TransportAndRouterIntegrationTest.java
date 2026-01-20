@@ -2,13 +2,13 @@ package sl.hackathon.client.integration;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sl.hackathon.client.api.TransportState;
 import sl.hackathon.client.dtos.*;
 import sl.hackathon.client.handlers.GameMessageRouter;
 import sl.hackathon.client.handlers.MessageHandler;
 import sl.hackathon.client.messages.*;
 import sl.hackathon.client.transport.WebSocketTransport;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,7 +46,15 @@ class TransportAndRouterIntegrationTest {
         
         // Simulate receiving a message
         GameState state = new GameState(new Unit[0], System.currentTimeMillis());
-        StartGameMessage message = new StartGameMessage(state);
+        
+        GameStatusUpdate statusUpdate = new GameStatusUpdate(
+            GameStatus.START,
+            new MapLayout(new Dimension(10, 10), new Position[0]),
+            new GameState[]{state},
+            null
+        );
+        
+        StartGameMessage message = new StartGameMessage(statusUpdate);
         String json = MessageCodec.serialize(message);
         
         // In a real scenario, this would come from WebSocket @OnMessage
@@ -120,7 +128,13 @@ class TransportAndRouterIntegrationTest {
         GameState state = new GameState(new Unit[0], System.currentTimeMillis());
         
         // Start game
-        router.routeMessage(new StartGameMessage(state));
+        GameStatusUpdate startUpdate = new GameStatusUpdate(
+            GameStatus.START,
+            new MapLayout(new Dimension(10, 10), new Position[0]),
+            new GameState[]{state},
+            null
+        );
+        router.routeMessage(new StartGameMessage(startUpdate));
         assertTrue(startLatch.await(1, TimeUnit.SECONDS));
         
         // Next turn
@@ -147,7 +161,7 @@ class TransportAndRouterIntegrationTest {
         // Disconnect when not connected
         transport.disconnect();
         
-        assertEquals(WebSocketTransport.TransportState.DISCONNECTED, transport.getState());
+        assertEquals(TransportState.DISCONNECTED, transport.getState());
     }
     
     /**

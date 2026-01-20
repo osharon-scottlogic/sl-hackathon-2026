@@ -10,14 +10,14 @@ import java.util.*;
  * Implementation of GameEngine that manages the authoritative game state.
  */
 public class GameEngineImpl implements GameEngine {
-    private List<String> activePlayers;
+    private final List<String> activePlayers;
     private GameState currentGameState;
-    private List<GameState> gameStateHistory;
+    private final List<GameState> gameStateHistory;
     private GameParams gameParams;
     private boolean initialized;
     private int currentTurn;
-    private ActionValidator actionValidator;
-    private GameStatusUpdater statusUpdater;
+    private final ActionValidator actionValidator;
+    private final GameStatusUpdater statusUpdater;
 
     public GameEngineImpl() {
         this.activePlayers = new ArrayList<>();

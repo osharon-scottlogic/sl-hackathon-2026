@@ -73,7 +73,19 @@ class ServerAPITest {
             System.currentTimeMillis()
         );
         
-        StartGameMessage message = new StartGameMessage(state);
+        MapLayout mapLayout = new MapLayout(
+            new Dimension(10, 10),
+            new Position[]{new Position(5, 5)}
+        );
+        
+        GameStatusUpdate statusUpdate = new GameStatusUpdate(
+            GameStatus.START,
+            mapLayout,
+            new GameState[]{state},
+            null
+        );
+        
+        StartGameMessage message = new StartGameMessage(statusUpdate);
         
         // Simulate handler invocation (internal method call for unit testing)
         serverAPI.setOnGameStart(msg -> {
@@ -88,7 +100,7 @@ class ServerAPITest {
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertNotNull(receivedMessage.get());
-        assertEquals(state, receivedMessage.get().getGameState());
+        assertEquals(statusUpdate, receivedMessage.get().getGameStatusUpdate());
     }
     
     @Test
@@ -220,9 +232,14 @@ class ServerAPITest {
         // Second handler (should replace first)
         serverAPI.setOnGameStart(msg -> latch2.countDown());
         
-        StartGameMessage message = new StartGameMessage(
-            new GameState(new Unit[0], System.currentTimeMillis())
+        GameStatusUpdate statusUpdate = new GameStatusUpdate(
+            GameStatus.START,
+            new MapLayout(new Dimension(10, 10), new Position[0]),
+            new GameState[]{new GameState(new Unit[0], System.currentTimeMillis())},
+            null
         );
+        
+        StartGameMessage message = new StartGameMessage(statusUpdate);
         
         // Trigger handler
         if (serverAPI.onGameStart != null) {
@@ -274,7 +291,13 @@ class ServerAPITest {
         // Should not throw when handlers are null
         assertDoesNotThrow(() -> {
             if (serverAPI.onGameStart != null) {
-                serverAPI.onGameStart.accept(new StartGameMessage(new GameState(new Unit[0], 0)));
+                GameStatusUpdate statusUpdate = new GameStatusUpdate(
+                    GameStatus.START,
+                    new MapLayout(new Dimension(10, 10), new Position[0]),
+                    new GameState[]{new GameState(new Unit[0], 0)},
+                    null
+                );
+                serverAPI.onGameStart.accept(new StartGameMessage(statusUpdate));
             }
         });
     }

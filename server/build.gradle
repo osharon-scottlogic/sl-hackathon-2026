@@ -8,6 +8,12 @@
 
 // Apply the java-library plugin to add support for Java Library
 apply plugin: 'java-library'
+apply plugin: 'application'
+
+// Configure the main class for the application
+application {
+    mainClass = 'sl.hackathon.server.Main'
+}
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -36,10 +42,10 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.5.13'
     implementation 'ch.qos.logback:logback-core:1.5.19'
 
-    // WebSocket API
-    implementation 'javax.websocket:javax.websocket-api:1.1'
+    // Jakarta WebSocket API (Jakarta EE 10)
+    implementation 'jakarta.websocket:jakarta.websocket-api:2.1.1'
     
-    // Tyrus WebSocket Server (reference implementation)
+    // Tyrus WebSocket Server (Jakarta WebSocket implementation)
     implementation 'org.glassfish.tyrus.bundles:tyrus-standalone-client-jdk:2.1.5'
     implementation 'org.glassfish.tyrus:tyrus-server:2.1.5'
     implementation 'org.glassfish.tyrus:tyrus-container-grizzly-server:2.1.5'

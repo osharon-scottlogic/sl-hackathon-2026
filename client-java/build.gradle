@@ -48,7 +48,7 @@ java {
 }
 
 application {
-    mainClass = 'sl.hackathon.client.Client'
+    mainClass = 'sl.hackathon.client.Main'
 }
 
 test {

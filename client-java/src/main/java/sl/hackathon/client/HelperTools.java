@@ -435,7 +435,7 @@ public class HelperTools {
         while (!current.equals(start)) {
             Position prev = parent.get(current);
             Direction dir = getDirectionBetween(prev, current);
-            path.add(0, dir);
+            path.addFirst(dir);
             current = prev;
         }
 
@@ -545,7 +545,7 @@ public class HelperTools {
             }
 
             for (List<Unit> ownerPawns : pawnsByOwner.values()) {
-                if (ownerPawns.size() > 1 && !ownerPawns.get(0).owner().equals(playerOwnerId)) {
+                if (ownerPawns.size() > 1 && !ownerPawns.getFirst().owner().equals(playerOwnerId)) {
                     // Two enemy pawns at same position → both die
                     for (Unit pawn : ownerPawns) {
                         pawnWillDie.put(pawn.id(), true);

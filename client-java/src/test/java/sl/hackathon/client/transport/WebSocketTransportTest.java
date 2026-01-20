@@ -3,6 +3,7 @@ package sl.hackathon.client.transport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sl.hackathon.client.api.TransportState;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -35,14 +36,14 @@ class WebSocketTransportTest {
     
     @Test
     void testInitialState() {
-        assertEquals(WebSocketTransport.TransportState.DISCONNECTED, transport.getState());
+        assertEquals(TransportState.DISCONNECTED, transport.getState());
         assertFalse(transport.isConnected());
     }
     
     @Test
     void testConnectWithInvalidURL() {
         assertThrows(Exception.class, () -> transport.connect("invalid-url"));
-        assertEquals(WebSocketTransport.TransportState.DISCONNECTED, transport.getState());
+        assertEquals(TransportState.DISCONNECTED, transport.getState());
     }
     
     @Test
@@ -69,7 +70,7 @@ class WebSocketTransportTest {
     void testDisconnectWhenNotConnected() {
         // Should not throw exception
         assertDoesNotThrow(() -> transport.disconnect());
-        assertEquals(WebSocketTransport.TransportState.DISCONNECTED, transport.getState());
+        assertEquals(TransportState.DISCONNECTED, transport.getState());
     }
     
     @Test
@@ -145,11 +146,11 @@ class WebSocketTransportTest {
     @Test
     void testStateTransitions() {
         // Initial state
-        assertEquals(WebSocketTransport.TransportState.DISCONNECTED, transport.getState());
+        assertEquals(TransportState.DISCONNECTED, transport.getState());
         
         // After disconnect (when already disconnected)
         transport.disconnect();
-        assertEquals(WebSocketTransport.TransportState.DISCONNECTED, transport.getState());
+        assertEquals(TransportState.DISCONNECTED, transport.getState());
     }
     
     @Test
@@ -173,7 +174,7 @@ class WebSocketTransportTest {
             transport.connect("ws://localhost:99999/nonexistent");
         });
         
-        assertEquals(WebSocketTransport.TransportState.DISCONNECTED, transport.getState());
+        assertEquals(TransportState.DISCONNECTED, transport.getState());
     }
     
     @Test

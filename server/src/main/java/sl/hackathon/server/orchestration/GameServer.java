@@ -56,7 +56,6 @@ public class GameServer {
     
     /**
      * Wires handler callbacks between components.
-     * 
      * Connections:
      * - ClientRegistry.onClientConnect → GameEngine.addPlayer
      * - ClientRegistry.onClientDisconnect → GameEngine.removePlayer
@@ -93,7 +92,6 @@ public class GameServer {
     
     /**
      * Starts the game server.
-     * 
      * Initializes WebSocket server, creates GameParams, starts GameSession thread.
      * 
      * @throws IllegalStateException if server is already running
@@ -130,7 +128,6 @@ public class GameServer {
     
     /**
      * Stops the game server.
-     * 
      * Shuts down GameSession thread and WebSocket server gracefully.
      */
     public void stop() {

@@ -2,6 +2,7 @@ package sl.hackathon.client.handlers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sl.hackathon.client.Ansi;
 import sl.hackathon.client.messages.*;
 
 /**
@@ -41,7 +42,9 @@ public class GameMessageRouter {
             Message message = MessageCodec.deserialize(jsonMessage);
             routeMessage(message);
         } catch (Exception e) {
-            logger.error("Failed to deserialize message: {}", jsonMessage, e);
+            logger.error(Ansi.RED + "Failed to deserialize message ({}): \n"+Ansi.WHITE+"{}\n"+ Ansi.RESET,
+                    e.getMessage(),
+                    jsonMessage, e);
             messageHandler.handleError(new MessageRoutingException("Deserialization failed", e));
         }
     }
