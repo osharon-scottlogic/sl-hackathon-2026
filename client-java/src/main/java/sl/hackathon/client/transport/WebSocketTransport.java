@@ -134,6 +134,9 @@ public class WebSocketTransport {
 
         @OnOpen
         public void onOpen(Session session) {
+            // Increase max message size (e.g., to 1 MB)
+            session.setMaxTextMessageBufferSize(1024 * 1024);
+            session.setMaxBinaryMessageBufferSize(1024 * 1024);
             logger.debug("WebSocket connection opened: {}", session.getId());
             connectLatch.countDown();
         }

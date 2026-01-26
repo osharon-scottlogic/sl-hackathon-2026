@@ -2,8 +2,8 @@ package sl.hackathon.client.handlers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sl.hackathon.client.Ansi;
 import sl.hackathon.client.messages.*;
+import sl.hackathon.client.util.Ansi;
 
 /**
  * Routes incoming messages to the appropriate handler methods.
@@ -42,7 +42,7 @@ public class GameMessageRouter {
             Message message = MessageCodec.deserialize(jsonMessage);
             routeMessage(message);
         } catch (Exception e) {
-            logger.error(Ansi.RED + "Failed to deserialize message ({}): \n"+Ansi.WHITE+"{}\n"+ Ansi.RESET,
+            logger.error(Ansi.RED + "Failed to deserialize message ({}): \n"+Ansi.YELLOW+"{}\n"+ Ansi.RESET,
                     e.getMessage(),
                     jsonMessage, e);
             messageHandler.handleError(new MessageRoutingException("Deserialization failed", e));
@@ -63,7 +63,7 @@ public class GameMessageRouter {
         try {
             switch (message) {
                 case PlayerAssignedMessage msg -> {
-                    logger.info("Routing PlayerAssignedMessage for player: {}", msg.getPlayerId());
+                    logger.info("Routing PlayerAssignedMessage for player: "+Ansi.YELLOW+"{}"+Ansi.RESET, msg.getPlayerId());
                     messageHandler.handlePlayerAssigned(msg);
                 }
                 case StartGameMessage msg -> {
@@ -71,7 +71,7 @@ public class GameMessageRouter {
                     messageHandler.handleStartGame(msg);
                 }
                 case NextTurnMessage msg -> {
-                    logger.debug("Routing NextTurnMessage for player: {}", msg.getPlayerId());
+                    logger.debug("Routing NextTurnMessage for player: "+Ansi.YELLOW+"{}"+Ansi.RESET, msg.getPlayerId());
                     messageHandler.handleNextTurn(msg);
                 }
                 case EndGameMessage msg -> {
@@ -79,18 +79,18 @@ public class GameMessageRouter {
                     messageHandler.handleGameEnd(msg);
                 }
                 case InvalidOperationMessage msg -> {
-                    logger.warn("Routing InvalidOperationMessage: {}", msg.getReason());
+                    logger.warn("Routing InvalidOperationMessage: "+Ansi.YELLOW+"{}"+Ansi.RESET, msg.getReason());
                     messageHandler.handleInvalidOperation(msg);
                 }
                 default -> {
-                    logger.warn("Unhandled message type: {}", message.getClass().getSimpleName());
+                    logger.warn("Unhandled message type: "+Ansi.YELLOW+"{}"+Ansi.RESET, message.getClass().getSimpleName());
                     messageHandler.handleError(
                         new MessageRoutingException("Unknown message type: " + message.getClass().getSimpleName())
                     );
                 }
             }
         } catch (Exception e) {
-            logger.error("Error while routing message", e);
+            logger.error(Ansi.RED+"Error while routing message: "+Ansi.YELLOW+"{}"+Ansi.RESET, e.getMessage(), e);
             messageHandler.handleError(new MessageRoutingException("Error in message handler", e));
         }
     }

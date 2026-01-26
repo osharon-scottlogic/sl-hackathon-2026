@@ -3,6 +3,7 @@ package sl.hackathon.server.communication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.Message;
+import sl.hackathon.server.util.Ansi;
 
 import java.util.List;
 import java.util.Map;
@@ -13,8 +14,7 @@ import java.util.stream.Collectors;
 /**
  * ClientRegistry manages player tracking and message routing for connected clients.
  * Thread-safe implementation supporting exactly 2 players.
- * 
- * Responsibilities:
+ * Responsisbilities:
  * - Register clients and assign player IDs (player-1, player-2)
  * - Track client-to-player mappings
  * - Route messages to specific players or broadcast to all
@@ -70,7 +70,7 @@ public class ClientRegistry {
         playerToClient.put(playerId, clientId);
         clientToPlayer.put(clientId, playerId);
         
-        logger.info("Registered client {} as {}", clientId, playerId);
+        logger.info("Registered client " + Ansi.YELLOW + "{}" + Ansi.RESET + " as " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId, playerId);
         
         return playerId;
     }
@@ -95,13 +95,13 @@ public class ClientRegistry {
             throw new IllegalArgumentException("Message cannot be null");
         }
         
-        logger.debug("Broadcasting message to {} clients", clientHandlers.size());
+        logger.debug("Broadcasting message to " + Ansi.YELLOW + "{}" + Ansi.RESET + " clients", clientHandlers.size());
         
         for (ClientHandler handler : clientHandlers.values()) {
             try {
                 handler.send(message);
             } catch (Exception e) {
-                logger.error("Failed to broadcast to client {}: {}", 
+                logger.error(Ansi.RED + "Failed to broadcast to client " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, 
                     handler.getClientId(), e.getMessage(), e);
             }
         }
@@ -133,7 +133,7 @@ public class ClientRegistry {
             throw new IllegalStateException("Client handler not found for player: " + playerId);
         }
         
-        logger.debug("Sending message to player {}", playerId);
+        logger.debug("Sending message to player " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
         handler.send(message);
     }
     
@@ -154,12 +154,12 @@ public class ClientRegistry {
             String playerId = clientToPlayer.remove(clientId);
             if (playerId != null) {
                 playerToClient.remove(playerId);
-                logger.info("Unregistered client {} ({})", clientId, playerId);
+                logger.info("Unregistered client " + Ansi.YELLOW + "{}" + Ansi.RESET + " (" + Ansi.YELLOW + "{}" + Ansi.RESET + ")", clientId, playerId);
             } else {
-                logger.warn("Client {} had no player ID mapping", clientId);
+                logger.warn("Client " + Ansi.YELLOW + "{}" + Ansi.RESET + " had no player ID mapping", clientId);
             }
         } else {
-            logger.debug("Client {} was not registered", clientId);
+            logger.debug("Client " + Ansi.YELLOW + "{}" + Ansi.RESET + " was not registered", clientId);
         }
     }
     

@@ -3,10 +3,11 @@ package sl.hackathon.server.engine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.*;
-import sl.hackathon.server.orchestration.GameSession;
+import sl.hackathon.server.util.Ansi;
 
 import java.util.*;
-import java.util.stream.Collectors;
+
+import static sl.hackathon.server.dtos.UnitType.*;
 
 /**
  * Implementation of GameStatusUpdater that handles state updates and collision resolution.
@@ -18,22 +19,23 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
     /**
      * Updates the game state by applying a set of actions and resolving collisions.
      *
-     * @param gameState the current game state
+     * @param currentUpdate the current game update (contains all current units in addedOrModified for now)
+     * @param playerId the player making the actions
      * @param actions the actions to apply
-     * @return the updated game state
+     * @return a GameUpdate containing only units that changed and IDs of removed units
      */
     @Override
-    public GameState update(GameState gameState, Action[] actions) {
-        if (gameState == null || gameState.units() == null) {
-            return gameState;
+    public GameState update(GameState currentUpdate, String playerId, Action[] actions) {
+        if (currentUpdate == null || currentUpdate.addedOrModified() == null) {
+            return currentUpdate;
         }
 
-        // Create a copy of units for modification
-        List<Unit> units = new ArrayList<>(Arrays.asList(gameState.units()));
+        // Create a copy of units for modification (currently all units are in addedOrModified)
+        List<Unit> units = new ArrayList<>(Arrays.asList(currentUpdate.addedOrModified()));
 
         // If no actions, return unchanged state
         if (actions == null || actions.length == 0) {
-            return gameState;
+            return currentUpdate;
         }
 
         // Build a map of action by unit ID for quick lookup
@@ -59,6 +61,7 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
 
         // Resolve collisions
         Set<String> unitsToRemove = new HashSet<>();
+        int unitsToAdd = 0;
         Map<Position, List<Unit>> positionMap = buildPositionMap(movedUnits.values());
 
         // Check for collisions at each position
@@ -66,16 +69,35 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
             List<Unit> unitsAtPosition = positionMap.get(pos);
 
             if (unitsAtPosition.size() > 1) {
-                resolveCollision(unitsAtPosition, unitsToRemove);
+                unitsToAdd += resolveCollision(unitsAtPosition, unitsToRemove);
             }
         }
 
         // Build final unit list
-        List<Unit> finalUnits = movedUnits.values().stream()
+        List<Unit> finalUnitsList = movedUnits.values().stream()
             .filter(unit -> !unitsToRemove.contains(unit.id()))
             .toList();
+        finalUnitsList = new ArrayList<>(finalUnitsList);
+        finalUnitsList.addAll(getNewlyAddedUnits(unitsToAdd,findBase(playerId, units)));
+        Unit[] finalUnits = finalUnitsList.toArray(Unit[]::new);
 
-        return new GameState(finalUnits.toArray(new Unit[0]), gameState.startAt());
+        // TODO: Generate proper delta update by comparing with previous state
+        // For now, returning all units in addedOrModified and empty removed array
+        return new GameState(finalUnits, new String[0], currentUpdate.startAt());
+    }
+
+    private List<Unit> getNewlyAddedUnits(int unitsToAdd, Unit baseUnit) {
+        List<Unit> units = new ArrayList<>();
+        for (int i=0;i<unitsToAdd;i++) {
+            units.add(new Unit(
+                "pawn-" + baseUnit.owner() + "-0",
+                baseUnit.owner(),
+                    UnitType.PAWN,
+                    new Position(baseUnit.position().x(), baseUnit.position().y())
+                ));
+        }
+
+        return units;
     }
 
     /**
@@ -191,41 +213,30 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
      * Rules:
      * - Enemy pawns on same tile → both die
      * - Friendly pawns on same tile → survive
-     * - Pawn + food → food consumed, pawn survives
+     * - Pawn + food → food consumed, pawn survives, new pawn created at owner's base
      * - Pawn + enemy base → pawn dies, base destroyed, game ends
      *
      * @param unitsAtPosition the units at the collision position
      * @param unitsToRemove the set of unit IDs to remove (modified by this method)
      */
-    private void resolveCollision(List<Unit> unitsAtPosition, Set<String> unitsToRemove) {
+    private int resolveCollision(List<Unit> unitsAtPosition, Set<String> unitsToRemove) {
         // Separate units by type and owner
-        List<Unit> pawns = new ArrayList<>();
-        List<Unit> food = new ArrayList<>();
-        List<Unit> bases = new ArrayList<>();
-
-        for (Unit unit : unitsAtPosition) {
-            switch (unit.type()) {
-                case PAWN:
-                    pawns.add(unit);
-                    break;
-                case FOOD:
-                    food.add(unit);
-                    break;
-                case BASE:
-                    bases.add(unit);
-                    break;
-            }
-        }
+        List<Unit> pawns = unitsAtPosition.stream().filter(unit->unit.type().equals(PAWN)).toList();
+        List<Unit> food = unitsAtPosition.stream().filter(unit->unit.type().equals(FOOD)).toList();
+        List<Unit> bases = unitsAtPosition.stream().filter(unit->unit.type().equals(BASE)).toList();
 
         // Rule: Pawn + enemy base → pawn dies, base destroyed
         if (!pawns.isEmpty() && !bases.isEmpty()) {
             for (Unit base : bases) {
-                unitsToRemove.add(base.id());
+                for (Unit pawn : pawns) {
+                    // Only remove if pawn and base belong to different owners
+                    if (!pawn.owner().equals(base.owner())) {
+                        unitsToRemove.add(base.id());
+                        unitsToRemove.add(pawn.id());
+                    }
+                }
             }
-            for (Unit pawn : pawns) {
-                unitsToRemove.add(pawn.id());
-            }
-            return;
+            return 0;
         }
 
         // Rule: Enemy pawns on same tile → both die; Friendly pawns on same tile → survive
@@ -244,11 +255,43 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
             }
         }
 
-        // Rule: Pawn + food → food consumed, pawn survives
+        // Rule: Pawn + food → food consumed, pawn survives, new pawn created at owner's base
         if (!pawns.isEmpty() && !food.isEmpty()) {
+            // Remove food units
             for (Unit f : food) {
                 unitsToRemove.add(f.id());
             }
+            return 1;
         }
+
+        return 0;
+    }
+
+    /**
+     * Finds the base position for a given player.
+     *
+     * @param owner the player ID
+     * @param allUnits all units in the game
+     * @return the player's base, or null if not found
+     */
+    private Unit findBase(String owner, Collection<Unit> allUnits) {
+        for (Unit unit : allUnits) {
+            if (unit.type().equals(BASE) && unit.owner().equals(owner)) {
+                return unit;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Finds the base position for a given player.
+     *
+     * @param owner the player ID
+     * @param allUnits all units in the game
+     * @return the position of the player's base, or null if not found
+     */
+    private Position findBasePosition(String owner, Collection<Unit> allUnits) {
+        Unit base = findBase(owner, allUnits);
+        return base!=null ? base.position() : null;
     }
 }

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import sl.hackathon.client.api.ServerAPI;
 import sl.hackathon.client.dtos.*;
 import sl.hackathon.client.messages.*;
+import sl.hackathon.client.util.Ansi;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -39,7 +40,7 @@ public class Orchestrator {
     private String playerId;
     
     private MapLayout mapLayout;
-    private GameState currentGameState;
+    private GameUpdate currentGameState;
     
     private final ExecutorService botExecutor = Executors.newSingleThreadExecutor();
     private volatile boolean initialized = false;
@@ -70,7 +71,7 @@ public class Orchestrator {
         wireCallbacks();
         initialized = true;
         
-        logger.info("Orchestrator initialized for player: {}", playerId);
+        logger.info("Orchestrator initialized for player: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
     }
     
     /**
@@ -93,12 +94,12 @@ public class Orchestrator {
      */
     private void handlePlayerAssigned(PlayerAssignedMessage message) {
         String assignedPlayerId = message.getPlayerId();
-        logger.info("Received player assignment: {}", assignedPlayerId);
+        logger.info("Received player assignment: " + Ansi.YELLOW + "{}" + Ansi.RESET, assignedPlayerId);
         
         // Update player ID with server-assigned value
         if (assignedPlayerId != null && !assignedPlayerId.isBlank()) {
             this.playerId = assignedPlayerId;
-            logger.info("Player ID updated to: {}", this.playerId);
+            logger.info("Player ID updated to: " + Ansi.YELLOW + "{}" + Ansi.RESET, this.playerId);
         } else {
             logger.warn("Received invalid player ID assignment");
         }
@@ -121,12 +122,12 @@ public class Orchestrator {
             // Extract initial game state from history (first element)
             if (statusUpdate.history() != null && statusUpdate.history().length > 0) {
                 this.currentGameState = statusUpdate.history()[0];
-                logger.info("Initial game state received with {} units", currentGameState.units().length);
+                logger.info("Initial game state received with " + Ansi.YELLOW + "{}" + Ansi.RESET + " units", currentGameState.units().length);
             } else {
                 logger.warn("No initial game state in history");
             }
             
-            logger.info("Map layout initialized: {}x{}", 
+            logger.info("Map layout initialized: " + Ansi.YELLOW + "{}x{}" + Ansi.RESET, 
                 mapLayout.dimension().width(), 
                 mapLayout.dimension().height());
         }
@@ -146,9 +147,9 @@ public class Orchestrator {
             return;
         }
         
-        logger.info("Turn started for player: {}", playerId);
+        logger.info("Turn started for player: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
         
-        GameState turnState = message.getGameState();
+        GameUpdate turnState = message.getGameState();
         if (turnState != null) {
             this.currentGameState = turnState;
         }
@@ -163,13 +164,13 @@ public class Orchestrator {
             
             // Send actions to server
             serverAPI.send(playerId, actions);
-            logger.info("Sent {} actions to server", actions.length);
+            logger.info("Sent " + Ansi.YELLOW + "{}" + Ansi.RESET + " actions to server", actions.length);
             
         } catch (TimeoutException e) {
             logger.warn("Bot decision-making timed out, sending fallback actions");
             sendFallbackActions();
         } catch (Exception e) {
-            logger.error("Error during turn processing", e);
+            logger.error(Ansi.RED + "Error during turn processing" + Ansi.RESET, e);
             sendFallbackActions();
         }
     }
@@ -211,7 +212,7 @@ public class Orchestrator {
             serverAPI.send(playerId, new Action[0]);
             logger.info("Sent fallback (empty) actions to server");
         } catch (IOException e) {
-            logger.error("Failed to send fallback actions", e);
+            logger.error(Ansi.RED + "Failed to send fallback actions" + Ansi.RESET, e);
         }
     }
     
@@ -229,9 +230,9 @@ public class Orchestrator {
             String winnerId = statusUpdate.winnerId();
             if (winnerId != null) {
                 if (winnerId.equals(playerId)) {
-                    logger.info("Victory! Player {} won the game", winnerId);
+                    logger.info("Victory! Player " + Ansi.YELLOW + "{}" + Ansi.RESET + " won the game", winnerId);
                 } else {
-                    logger.info("Defeat. Player {} won the game", winnerId);
+                    logger.info("Defeat. Player " + Ansi.YELLOW + "{}" + Ansi.RESET + " won the game", winnerId);
                 }
             } else {
                 logger.info("Game ended (draw or no winner)");
@@ -242,6 +243,10 @@ public class Orchestrator {
         }
         
         cleanup();
+        
+        // Exit the client application after game ends
+        logger.info("Exiting client application");
+        System.exit(0);
     }
     
     /**
@@ -250,7 +255,7 @@ public class Orchestrator {
      * @param message the invalid operation message
      */
     private void handleInvalidOperation(InvalidOperationMessage message) {
-        logger.warn("Invalid operation: {}", message.getReason());
+        logger.warn("Invalid operation: " + Ansi.YELLOW + "{}" + Ansi.RESET, message.getReason());
     }
     
     /**
@@ -259,7 +264,7 @@ public class Orchestrator {
      * @param error the error that occurred
      */
     private void handleError(Throwable error) {
-        logger.error("Server API error", error);
+        logger.error(Ansi.RED + "Server API error" + Ansi.RESET, error);
     }
     
     /**
@@ -290,14 +295,47 @@ public class Orchestrator {
     private String writeLogFile(GameStatusUpdate statusUpdate, String timestamp) throws IOException {
         String filename = GAME_LOGS_DIR + "game_" + timestamp + ".json";
 
+        // Extract all unique players from first state
+        java.util.Set<String> playerIds = new java.util.LinkedHashSet<>();
+        if (statusUpdate.history() != null && statusUpdate.history().length > 0) {
+            GameState firstState = statusUpdate.history()[0];
+            if (firstState.units() != null) {
+                for (Unit unit : firstState.units()) {
+                    if (unit.owner() != null && !unit.owner().equals("none")) {
+                        playerIds.add(unit.owner());
+                    }
+                }
+            }
+        }
+
         // Write game log as JSON
         try (FileWriter writer = new FileWriter(filename)) {
             // Simple JSON representation
             writer.write("{\n");
-            writer.write("  \"playerId\": \"" + playerId + "\",\n");
+            
+            // Players array
+            writer.write("  \"players\": " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(playerIds.toArray(new String[0])) + ",\n");
+            
+            // Map dimensions
+            writer.write("  \"mapDimensions\": ");
+            if (statusUpdate.map() != null && statusUpdate.map().dimension() != null) {
+                writer.write(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(statusUpdate.map().dimension()));
+            } else {
+                writer.write("null");
+            }
+            writer.write(",\n");
+            
+            // Wall positions
+            writer.write("  \"walls\": ");
+            if (statusUpdate.map() != null && statusUpdate.map().walls() != null) {
+                writer.write(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(statusUpdate.map().walls()));
+            } else {
+                writer.write("[]");
+            }
+            writer.write(",\n");
+            
             writer.write("  \"winner\": \"" + (statusUpdate.winnerId() != null ? statusUpdate.winnerId() : "none") + "\",\n");
-            writer.write("  \"status\": \"" + statusUpdate.status() + "\",\n");
-            writer.write("  \"timestamp\": " + timestamp + "\n,");
+            writer.write("  \"timestamp\": " + timestamp + ",\n");
             writer.write("  \"turns\": \n" + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(statusUpdate.history()) +"\n");
             writer.write("}\n");
         }

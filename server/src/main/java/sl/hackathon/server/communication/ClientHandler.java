@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.Message;
 import sl.hackathon.server.dtos.MessageCodec;
+import sl.hackathon.server.util.Ansi;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -45,7 +46,7 @@ public class ClientHandler {
         }
         this.session = session;
         this.clientId = UUID.randomUUID().toString();
-        logger.info("Created ClientHandler with ID: {}", clientId);
+        logger.info("Created ClientHandler with ID: " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId);
     }
     
     /**
@@ -64,13 +65,13 @@ public class ClientHandler {
      * @param jsonMessage the JSON message string to send (must not be null or empty)
      * @throws IllegalArgumentException if jsonMessage is null or empty
      */
-    public void send(String jsonMessage) {
+    private void send(String jsonMessage) {
         if (jsonMessage == null || jsonMessage.isEmpty()) {
             throw new IllegalArgumentException("JSON message cannot be null or empty");
         }
         
         if (!isOpen()) {
-            logger.warn("Cannot send message to client {}: connection is closed", clientId);
+            logger.warn("Cannot send message to client " + Ansi.YELLOW + "{}" + Ansi.RESET + ": connection is closed", clientId);
             return;
         }
         
@@ -78,9 +79,9 @@ public class ClientHandler {
             synchronized (session) {
                 session.getBasicRemote().sendText(jsonMessage);
             }
-            logger.debug("Sent message to client {}: {}", clientId, jsonMessage);
+           // logger.debug("Sent message to client {}: {}{}{}", clientId, Ansi.GREEN,jsonMessage, Ansi.RESET);
         } catch (IOException e) {
-            logger.error("Failed to send message to client {}: {}", clientId, e.getMessage(), e);
+            logger.error(Ansi.RED + "Failed to send message to client " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId, e.getMessage(), e);
         }
     }
     
@@ -98,9 +99,10 @@ public class ClientHandler {
         
         try {
             String json = MessageCodec.serialize(message);
+            logger.info("message size = "+Ansi.GREEN+"{}"+Ansi.RESET, json.length());
             send(json);
         } catch (Exception e) {
-            logger.error("Failed to serialize and send message to client {}: {}", clientId, e.getMessage(), e);
+            logger.error(Ansi.RED + "Failed to serialize and send message to client " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId, e.getMessage(), e);
         }
     }
     
@@ -112,21 +114,21 @@ public class ClientHandler {
      */
     public void handleMessage(String json) {
         if (json == null || json.isEmpty()) {
-            logger.warn("Received null or empty message from client {}", clientId);
+            logger.warn("Received null or empty message from client " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId);
             return;
         }
         
         try {
             Message message = MessageCodec.deserialize(json);
-            logger.debug("Received message from client {}: {}", clientId, message.getClass().getSimpleName());
+            logger.debug("Received message from client "+Ansi.YELLOW+"{}"+Ansi.RESET+": "+Ansi.GREEN+"{}"+Ansi.RESET, clientId, message.getClass().getSimpleName());
             
             if (messageCallback != null) {
                 messageCallback.accept(clientId, message);
             } else {
-                logger.warn("No message callback registered for client {}", clientId);
+                logger.warn("No message callback registered for client " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId);
             }
         } catch (Exception e) {
-            logger.error("Failed to deserialize message from client {}: {}", clientId, e.getMessage(), e);
+            logger.error(Ansi.RED + "Failed to deserialize message from client " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId, e.getMessage(), e);
         }
     }
     
@@ -138,9 +140,9 @@ public class ClientHandler {
         if (session != null && session.isOpen()) {
             try {
                 session.close();
-                logger.info("Closed connection for client {}", clientId);
+                logger.info("Closed connection for client " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId);
             } catch (IOException e) {
-                logger.error("Error closing connection for client {}: {}", clientId, e.getMessage(), e);
+                logger.error(Ansi.RED + "Error closing connection for client " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId, e.getMessage(), e);
             }
         }
     }

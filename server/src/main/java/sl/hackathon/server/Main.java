@@ -1,5 +1,7 @@
 package sl.hackathon.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.Dimension;
@@ -9,6 +11,7 @@ import sl.hackathon.server.engine.GameEngine;
 import sl.hackathon.server.engine.GameEngineImpl;
 import sl.hackathon.server.orchestration.GameServer;
 import sl.hackathon.server.orchestration.ServerConfig;
+import sl.hackathon.server.util.Ansi;
 
 /**
  * Main entry point for the game server application.
@@ -16,7 +19,8 @@ import sl.hackathon.server.orchestration.ServerConfig;
  */
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
-    
+    private static final ObjectMapper objectMapper = JsonMapper.builder().build();
+
     // Default server configuration
     private static final int DEFAULT_PORT = 8080;
     private static final long DEFAULT_TURN_TIME_LIMIT = 15000L; // 15 seconds
@@ -26,23 +30,18 @@ public class Main {
     private static final int DEFAULT_MAP_HEIGHT = 10;
     
     public static void main(String[] args) {
-        logger.info("Starting Game Server...");
+        logger.info(Ansi.MAGENTA+"Starting Game Server..."+Ansi.RESET);
         
         try {
             // Create map configuration
             MapConfig mapConfig = createDefaultMapConfig();
-            
-            // Create server configuration
-            ServerConfig config = new ServerConfig(DEFAULT_PORT, mapConfig, DEFAULT_TURN_TIME_LIMIT);
-            logger.info("Server configuration: {}", config);
-            
-            // Create game engine
-            GameEngine gameEngine = new GameEngineImpl();
-            logger.info("Game engine initialized");
-            
-            // Create game server
-            GameServer gameServer = new GameServer(config, gameEngine);
-            logger.info("Game server created");
+
+            // Create game engine + server
+            GameServer gameServer = new GameServer(
+                new ServerConfig(DEFAULT_PORT, mapConfig, DEFAULT_TURN_TIME_LIMIT),
+                new GameEngineImpl()
+            );
+            logger.info("Game engine initialized and game server created");
             
             // Add shutdown hook for graceful termination
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -50,23 +49,43 @@ public class Main {
                 try {
                     gameServer.stop();
                     logger.info("Server stopped successfully");
-                    System.exit(0);
                 } catch (Exception e) {
-                    logger.error("Error during server shutdown", e);
+                    logger.error(Ansi.RED + "Error during server shutdown" + Ansi.RESET, e);
                 }
             }));
             
             // Start the server
             gameServer.start();
-            logger.info("Game server started successfully on port {}", DEFAULT_PORT);
-            logger.info("Server is ready to accept connections at ws://localhost:{}/game", DEFAULT_PORT);
+            logger.info("Game server started successfully on port " + Ansi.YELLOW + "{}" + Ansi.RESET, DEFAULT_PORT);
+            logger.info("Server is ready to accept connections at " + Ansi.YELLOW + "ws://localhost:{}/game" + Ansi.RESET, DEFAULT_PORT);
             
-            // Keep main thread alive
-            Thread.currentThread().join();
+            // Wait for game session to complete
+            waitForGameCompletion(gameServer);
+            
+            // Game ended, stop server
+            logger.info("Game has ended, shutting down server...");
+            gameServer.stop();
+            logger.info("Server stopped successfully");
+            System.exit(0);
             
         } catch (Exception e) {
-            logger.error("Failed to start game server", e);
+            logger.error(Ansi.RED + "Failed to start game server" + Ansi.RESET, e);
             System.exit(1);
+        }
+    }
+    
+    /**
+     * Waits for the game session to complete.
+     * 
+     * @param gameServer the game server to monitor
+     * @throws InterruptedException if interrupted while waiting
+     */
+    private static void waitForGameCompletion(GameServer gameServer) throws InterruptedException {
+        Thread gameSessionThread = gameServer.getGameSessionThread();
+        if (gameSessionThread != null) {
+            logger.info("Waiting for game session to complete...");
+            gameSessionThread.join();
+            logger.info("Game session completed");
         }
     }
     

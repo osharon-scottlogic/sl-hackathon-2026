@@ -232,7 +232,7 @@ class GameMessageRouterTest {
         router.routeMessage(new EndGameMessage(new GameStatusUpdate(
             GameStatus.END, 
             new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[0], 
+            new GameState[0],
             "p1"
         )));
         

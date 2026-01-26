@@ -1,5 +1,7 @@
 package sl.hackathon.server.engine;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.*;
 import sl.hackathon.server.validators.ActionValidator;
 import sl.hackathon.server.validators.ActionValidatorImpl;
@@ -10,6 +12,7 @@ import java.util.*;
  * Implementation of GameEngine that manages the authoritative game state.
  */
 public class GameEngineImpl implements GameEngine {
+    private static final Logger logger = LoggerFactory.getLogger(GameEngineImpl.class);
     private final List<String> activePlayers;
     private GameState currentGameState;
     private final List<GameState> gameStateHistory;
@@ -238,6 +241,7 @@ public class GameEngineImpl implements GameEngine {
 
     /**
      * Spawns food units based on the food scarcity parameter.
+     * Creates at most one food unit per call if a random float is less than foodScarcity.
      *
      * @param units the list of units to add food to
      * @param gameParams the game parameters
@@ -246,10 +250,12 @@ public class GameEngineImpl implements GameEngine {
         Dimension mapDim = gameParams.mapConfig().dimension();
         float scarcity = gameParams.foodScarcity();
 
-        // Calculate number of food units (inverse of scarcity)
-        // Higher scarcity = fewer food units
-        int mapArea = mapDim.width() * mapDim.height();
-        int foodCount = Math.max(1, Math.round(mapArea * (1.0f - scarcity) / 10.0f));
+        // Check if food should spawn based on scarcity
+        Random random = new Random();
+        if (random.nextFloat() <= scarcity) {
+            return; // No food spawned this turn
+        }
+        logger.debug("Spawning one food unit");
 
         Set<Position> occupiedPositions = new HashSet<>();
         for (Unit unit : units) {
@@ -258,26 +264,29 @@ public class GameEngineImpl implements GameEngine {
 
         Set<Position> wallPositions = new HashSet<>(Arrays.asList(gameParams.mapConfig().walls()));
 
-        // Spawn food at random unoccupied positions
-        Random random = new Random();
-        int foodSpawned = 0;
+        // Spawn one food at a random unoccupied position
+        int mapArea = mapDim.width() * mapDim.height();
+        int attempts = 0;
+        int maxAttempts = mapArea * 2; // Prevent infinite loop
 
-        while (foodSpawned < foodCount && foodSpawned < mapArea) {
+        while (attempts < maxAttempts) {
             int x = random.nextInt(mapDim.width());
             int y = random.nextInt(mapDim.height());
             Position foodPos = new Position(x, y);
 
             if (!occupiedPositions.contains(foodPos) && !wallPositions.contains(foodPos)) {
+                // Generate unique food ID
+                long foodId = System.currentTimeMillis() + random.nextInt(1000);
                 Unit food = new Unit(
-                    "food-" + foodSpawned,
+                    "food-" + foodId,
                     "none",
                     UnitType.FOOD,
                     foodPos
                 );
                 units.add(food);
-                occupiedPositions.add(foodPos);
-                foodSpawned++;
+                return; // Successfully spawned one food
             }
+            attempts++;
         }
     }
 }

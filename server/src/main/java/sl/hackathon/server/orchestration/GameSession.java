@@ -1,11 +1,15 @@
 package sl.hackathon.server.orchestration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.communication.ClientRegistry;
 import sl.hackathon.server.dtos.*;
 import sl.hackathon.server.engine.GameEngine;
+import sl.hackathon.server.util.Ansi;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * GameSession orchestrates the game loop and manages turn progression.
  * Implements Runnable to execute in a background thread.
- * 
  * Responsibilities:
  * - Wait for both players to be ready via ClientRegistry
  * - Initialize game with GameParams
@@ -29,6 +32,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class GameSession implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(GameSession.class);
+    private static final ObjectMapper objectMapper = JsonMapper.builder().build();
     
     private final GameEngine gameEngine;
     private final ClientRegistry clientRegistry;
@@ -80,12 +84,12 @@ public class GameSession implements Runnable {
      */
     public void submitAction(String playerId, int turnId, Action[] actions) {
         if (turnId != currentTurnId) {
-            logger.warn("Player {} submitted actions for turn {} but current turn is {}", 
+            logger.warn("Player " + Ansi.YELLOW + "{}" + Ansi.RESET + " submitted actions for turn " + Ansi.YELLOW + "{}" + Ansi.RESET + " but current turn is " + Ansi.YELLOW + "{}" + Ansi.RESET, 
                 playerId, turnId, currentTurnId);
             return;
         }
         
-        logger.debug("Player {} submitted {} actions for turn {}", playerId, actions.length, turnId);
+        logger.debug("Player " + Ansi.YELLOW + "{}" + Ansi.RESET + " submitted " + Ansi.YELLOW + "{}" + Ansi.RESET + " actions for turn " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId, actions.length, turnId);
         pendingActions.put(playerId, actions);
         
         // Check if all players have submitted
@@ -123,7 +127,8 @@ public class GameSession implements Runnable {
             
             // Initialize the game
             initializeGame();
-            
+
+            logger.debug("game initialized with "+Ansi.YELLOW+"{}"+Ansi.RESET+" units", gameEngine.getGameState().units().length);
             // Main game loop
             runGameLoop();
             
@@ -136,14 +141,13 @@ public class GameSession implements Runnable {
             logger.warn("GameSession interrupted", e);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            logger.error("GameSession encountered an error", e);
+            logger.error(Ansi.RED + "GameSession encountered an error" + Ansi.RESET, e);
             throw new RuntimeException("GameSession failed", e);
         }
     }
     
     /**
      * Waits for both players to connect via ClientRegistry.
-     * 
      * @throws InterruptedException if interrupted while waiting
      */
     private void waitForPlayers() throws InterruptedException {
@@ -161,8 +165,8 @@ public class GameSession implements Runnable {
     /**
      * Initializes the game with the configured GameParams.
      */
-    private void initializeGame() {
-        logger.info("Initializing game with params: {}", gameParams);
+    private void initializeGame() throws JsonProcessingException {
+        logger.info("Initializing game with params: " + Ansi.YELLOW + "{}" + Ansi.RESET, objectMapper.writeValueAsString(gameParams));
         
         GameState initialState = gameEngine.initialize(gameParams);
         gameStarted = true;
@@ -187,11 +191,12 @@ public class GameSession implements Runnable {
      * @throws InterruptedException if interrupted during turn processing
      */
     private void runGameLoop() throws InterruptedException {
-        logger.info("Starting game loop");
-        
-        while (!gameEngine.isGameEnded() && !shutdown) {
+        logger.info("Starting game loop with "+Ansi.YELLOW+"{}"+ Ansi.RESET+" units", gameEngine.getGameState().units().length);
+
+        while (!gameEngine.isGameEnded() && !shutdown && currentTurnId < 5000) {
             processTurn();
             currentTurnId++;
+            logger.debug("turn "+Ansi.GREEN+"{}"+ Ansi.RESET+" ended with "+Ansi.YELLOW+"{}"+ Ansi.RESET+" units", currentTurnId, gameEngine.getGameState().units().length);
         }
         
         logger.info("Game loop ended. Game ended: {}, Shutdown: {}", gameEngine.isGameEnded(), shutdown);
@@ -207,7 +212,7 @@ public class GameSession implements Runnable {
      * @throws InterruptedException if interrupted while waiting for actions
      */
     private void processTurn() throws InterruptedException {
-        logger.debug("Processing turn {}", currentTurnId);
+        logger.debug("Processing turn " + Ansi.YELLOW + "{}" + Ansi.RESET, currentTurnId);
         
         // Clear previous turn's actions
         pendingActions.clear();
@@ -220,7 +225,7 @@ public class GameSession implements Runnable {
             try {
                 clientRegistry.send(playerId, turnMessage);
             } catch (Exception e) {
-                logger.error("Failed to send NextTurnMessage to player {}: {}", playerId, e.getMessage());
+                logger.error(Ansi.RED + "Failed to send NextTurnMessage to player " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId, e.getMessage());
             }
         }
         
@@ -229,7 +234,7 @@ public class GameSession implements Runnable {
         boolean actionsReceived = turnLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
         
         if (!actionsReceived) {
-            logger.warn("Turn {} timed out after {}ms. Processing partial actions.", currentTurnId, timeoutMs);
+            logger.warn("Turn " + Ansi.YELLOW + "{}" + Ansi.RESET + " timed out after " + Ansi.YELLOW + "{}" + Ansi.RESET + "ms. Processing partial actions.", currentTurnId, timeoutMs);
         }
         
         // Process each player's actions
@@ -237,17 +242,17 @@ public class GameSession implements Runnable {
             Action[] actions = pendingActions.getOrDefault(playerId, new Action[0]);
             
             if (actions.length == 0) {
-                logger.warn("Player {} submitted no actions for turn {}", playerId, currentTurnId);
+                logger.warn("Player " + Ansi.YELLOW + "{}" + Ansi.RESET + " submitted no actions for turn " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId, currentTurnId);
             }
             
             boolean success = gameEngine.handlePlayerActions(playerId, actions);
             
             if (!success) {
-                logger.warn("Failed to process actions for player {} on turn {}", playerId, currentTurnId);
+                logger.warn("Failed to process actions for player " + Ansi.YELLOW + "{}" + Ansi.RESET + " on turn " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId, currentTurnId);
             }
         }
         
-        logger.debug("Turn {} completed", currentTurnId);
+        logger.debug("Turn " + Ansi.YELLOW + "{}" + Ansi.RESET + " completed, " + Ansi.YELLOW + "{}" + Ansi.RESET + " units on the board", currentTurnId, gameEngine.getGameState().units().length);
     }
     
     /**
@@ -266,6 +271,6 @@ public class GameSession implements Runnable {
         EndGameMessage endMessage = new EndGameMessage(statusUpdate);
         clientRegistry.broadcast(endMessage);
         
-        logger.info("End game message broadcast. Winner: {} after {} turns", gameEngine.getWinnerId(), gameEngine.getGameStateHistory().size());
+        logger.info("End game message broadcast. Winner: " + Ansi.YELLOW + "{}" + Ansi.RESET + " after " + Ansi.YELLOW + "{}" + Ansi.RESET + " turns", gameEngine.getWinnerId(), gameEngine.getGameStateHistory().size());
     }
 }

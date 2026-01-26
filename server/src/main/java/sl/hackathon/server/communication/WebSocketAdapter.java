@@ -1,6 +1,7 @@
 package sl.hackathon.server.communication;
 
 import jakarta.websocket.*;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.Message;
@@ -8,6 +9,8 @@ import sl.hackathon.server.dtos.MessageCodec;
 import sl.hackathon.server.dtos.PlayerAssignedMessage;
 
 import jakarta.websocket.server.ServerEndpoint;
+import sl.hackathon.server.util.Ansi;
+
 import java.io.IOException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -23,7 +26,13 @@ import java.util.function.Consumer;
 public class WebSocketAdapter {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketAdapter.class);
 
+    /**
+     * -- GETTER --
+     *  Gets the currently configured ClientRegistry.
+     *
+     */
     // Static references set via dependency injection
+    @Getter
     private static ClientRegistry clientRegistry;
     private static Consumer<String> onClientConnectCallback;
     private static Consumer<String> onClientDisconnectCallback;
@@ -50,16 +59,7 @@ public class WebSocketAdapter {
         clientRegistry = registry;
         logger.info("ClientRegistry injected into WebSocketAdapter");
     }
-    
-    /**
-     * Gets the currently configured ClientRegistry.
-     * 
-     * @return the ClientRegistry instance, or null if not set
-     */
-    public static ClientRegistry getClientRegistry() {
-        return clientRegistry;
-    }
-    
+
     /**
      * Sets the callback to invoke when a client connects.
      * Callback receives the player ID.
@@ -111,6 +111,10 @@ public class WebSocketAdapter {
      */
     @OnOpen
     public void onOpen(Session session) {
+        // Increase max message size (e.g., to 1 MB)
+        session.setMaxTextMessageBufferSize(1024 * 1024);
+        session.setMaxBinaryMessageBufferSize(1024 * 1024);
+
         if (clientRegistry == null) {
             logger.error("ClientRegistry not set - cannot handle connection");
             closeSession(session);
@@ -119,7 +123,7 @@ public class WebSocketAdapter {
         
         try {
             clientHandler = new ClientHandler(session);
-            logger.info("WebSocket connection opened: {}", clientHandler.getClientId());
+            logger.info("WebSocket connection opened: "+ Ansi.YELLOW+"{}"+Ansi.RESET, clientHandler.getClientId());
             
             // Set message callback to forward messages to onMessageCallback
             clientHandler.setMessageCallback((clientId, message) -> {
@@ -130,13 +134,12 @@ public class WebSocketAdapter {
             
             // Register with ClientRegistry
             playerId = clientRegistry.register(clientHandler);
-            logger.info("Client {} registered as {}", clientHandler.getClientId(), playerId);
+            logger.info("Client "+Ansi.YELLOW+"{}"+Ansi.RESET +" registered as "+Ansi.YELLOW+"{}"+Ansi.RESET, clientHandler.getClientId(), playerId);
             
             // Send player assignment message to client
             PlayerAssignedMessage playerAssignedMsg = new PlayerAssignedMessage(playerId);
-            String assignmentJson = MessageCodec.serialize(playerAssignedMsg);
-            clientHandler.send(assignmentJson);
-            logger.info("Sent player assignment to {}", playerId);
+            clientHandler.send(playerAssignedMsg);
+            logger.info("Sent player assignment to "+Ansi.YELLOW+"{}"+Ansi.RESET, playerId);
 
             // Invoke connection callback
             if (onClientConnectCallback != null) {
@@ -145,10 +148,10 @@ public class WebSocketAdapter {
             
         } catch (IllegalStateException e) {
             // Maximum players reached
-            logger.warn("Cannot register client: {}", e.getMessage());
+            logger.warn("Cannot register client: "+Ansi.YELLOW+"{}"+Ansi.RESET, e.getMessage());
             closeSession(session);
         } catch (Exception e) {
-            logger.error("Error handling connection open: {}", e.getMessage(), e);
+            logger.error("Error handling connection open: "+Ansi.YELLOW+"{}"+Ansi.RESET, e.getMessage(), e);
             closeSession(session);
         }
     }
@@ -167,12 +170,12 @@ public class WebSocketAdapter {
             return;
         }
         
-        logger.debug("Received message from {}: {}", playerId, message);
+        logger.debug("Received message from "+Ansi.YELLOW+"{}"+Ansi.RESET+": "+Ansi.YELLOW+"{}"+Ansi.RESET, playerId, message);
         
         try {
             clientHandler.handleMessage(message);
         } catch (Exception e) {
-            logger.error("Error handling message from {}: {}", playerId, e.getMessage(), e);
+            logger.error("Error handling message from "+Ansi.YELLOW+"{}"+Ansi.RESET+": "+Ansi.YELLOW+"{}"+Ansi.RESET, playerId, e.getMessage(), e);
         }
     }
     
@@ -185,7 +188,7 @@ public class WebSocketAdapter {
      */
     @OnClose
     public void onClose(Session session, CloseReason closeReason) {
-        logger.info("WebSocket connection closed for {}: {}", 
+        logger.info("WebSocket connection closed for "+Ansi.YELLOW+"{}"+Ansi.RESET+": "+Ansi.YELLOW+"{}"+Ansi.RESET,
             playerId != null ? playerId : "unknown", 
             closeReason != null ? closeReason.getReasonPhrase() : "no reason");
         
@@ -210,7 +213,7 @@ public class WebSocketAdapter {
      */
     @OnError
     public void onError(Session session, Throwable throwable) {
-        logger.error("WebSocket error for {}: {}", 
+        logger.error(Ansi.RED + "WebSocket error for "+Ansi.YELLOW+"{}"+Ansi.RESET+": "+Ansi.YELLOW+"{}"+Ansi.RESET,
             playerId != null ? playerId : "unknown", 
             throwable.getMessage(), 
             throwable);
@@ -231,7 +234,7 @@ public class WebSocketAdapter {
                     "Server cannot accept more connections"
                 ));
             } catch (Exception e) {
-                logger.error("Error closing session: {}", e.getMessage());
+                logger.error(Ansi.RED + "Error closing session: "+ Ansi.YELLOW + "{}"+Ansi.RESET, e.getMessage());
             }
         }
     }

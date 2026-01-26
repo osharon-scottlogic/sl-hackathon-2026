@@ -2,8 +2,6 @@ package sl.hackathon.server.engine;
 
 import sl.hackathon.server.dtos.*;
 
-import java.util.List;
-
 /**
  * Handler interface for when it's a player's turn.
  */

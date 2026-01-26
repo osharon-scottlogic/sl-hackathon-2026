@@ -76,54 +76,27 @@ class ClientHandlerTest {
     }
 
     @Test
-    void testSendJsonMessageSuccess() throws IOException {
-        // Test sending a valid JSON message
-        String jsonMessage = "{\"type\":\"TEST\"}";
-        
-        clientHandler.send(jsonMessage);
-        
-        verify(mockRemote, times(1)).sendText(jsonMessage);
-    }
-
-    @Test
-    void testSendJsonMessageWithNullThrowsException() {
-        // Test that sending null JSON throws exception
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            clientHandler.send((String) null);
-        });
-        assertEquals("JSON message cannot be null or empty", exception.getMessage());
-    }
-
-    @Test
-    void testSendJsonMessageWithEmptyStringThrowsException() {
-        // Test that sending empty JSON throws exception
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            clientHandler.send("");
-        });
-        assertEquals("JSON message cannot be null or empty", exception.getMessage());
-    }
-
-    @Test
-    void testSendJsonMessageWhenConnectionClosed() throws IOException {
+    void testSendMessageWhenConnectionClosed() throws IOException {
         // Test that sending when connection is closed doesn't throw exception
         when(mockSession.isOpen()).thenReturn(false);
         
-        clientHandler.send("{\"type\":\"TEST\"}");
+        JoinGameMessage message = new JoinGameMessage("player-1");
+        clientHandler.send(message);
         
         // Should not attempt to send
         verify(mockRemote, never()).sendText(anyString());
     }
 
     @Test
-    void testSendJsonMessageHandlesIOException() throws IOException {
+    void testSendMessageHandlesIOException() throws IOException {
         // Test that IOException during send is caught and logged
-        String jsonMessage = "{\"type\":\"TEST\"}";
-        doThrow(new IOException("Network error")).when(mockRemote).sendText(jsonMessage);
+        JoinGameMessage message = new JoinGameMessage("player-1");
+        doThrow(new IOException("Network error")).when(mockRemote).sendText(anyString());
         
         // Should not throw exception
-        assertDoesNotThrow(() -> clientHandler.send(jsonMessage));
+        assertDoesNotThrow(() -> clientHandler.send(message));
         
-        verify(mockRemote, times(1)).sendText(jsonMessage);
+        verify(mockRemote, times(1)).sendText(anyString());
     }
 
     @Test
@@ -309,13 +282,13 @@ class ClientHandlerTest {
         // Test that send() synchronizes access to session (prevent concurrent sends)
         // This is a behavioral test to ensure thread safety
         
-        String jsonMessage = "{\"type\":\"TEST\"}";
+        JoinGameMessage message = new JoinGameMessage("player-1");
         
         // Create a handler and send a message
-        clientHandler.send(jsonMessage);
+        clientHandler.send(message);
         
         // Verify that the session was accessed
-        verify(mockRemote, times(1)).sendText(jsonMessage);
+        verify(mockRemote, times(1)).sendText(anyString());
         
         // The synchronization itself is hard to test directly,
         // but we verify the method completes successfully

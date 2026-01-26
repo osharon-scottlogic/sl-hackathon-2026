@@ -1,5 +1,8 @@
 package sl.hackathon.server.orchestration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,11 +11,11 @@ import sl.hackathon.server.communication.WebSocketAdapter;
 import sl.hackathon.server.communication.WebSocketServerContainer;
 import sl.hackathon.server.dtos.*;
 import sl.hackathon.server.engine.GameEngine;
+import sl.hackathon.server.util.Ansi;
 
 /**
  * Main orchestrator for the game server.
  * Wires together GameEngine, ClientRegistry, GameSession, and WebSocket communication.
- * 
  * Responsibilities:
  * - Initialize and configure all server components
  * - Wire handler callbacks between components
@@ -23,7 +26,8 @@ import sl.hackathon.server.engine.GameEngine;
 @Getter
 public class GameServer {
     private static final Logger logger = LoggerFactory.getLogger(GameServer.class);
-    
+    private static final ObjectMapper objectMapper = JsonMapper.builder().build();
+
     private final ServerConfig config;
     private final GameEngine gameEngine;
     private final ClientRegistry clientRegistry;
@@ -69,18 +73,18 @@ public class GameServer {
         
         // Wire client connect/disconnect to GameEngine
         WebSocketAdapter.setOnClientConnect(playerId -> {
-            logger.info("Client connected: {}", playerId);
+            logger.info("Client connected: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
             gameEngine.addPlayer(playerId);
         });
         
         WebSocketAdapter.setOnClientDisconnect(playerId -> {
-            logger.info("Client disconnected: {}", playerId);
+            logger.info("Client disconnected: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
             gameEngine.removePlayer(playerId);
         });
         
         // Wire incoming action messages to GameEngine via GameSession
         WebSocketAdapter.setOnMessage((playerId, message) -> {
-            logger.debug("Received message from {}: {}", playerId, message.getClass().getSimpleName());
+            logger.debug("Received message from " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId, message.getClass().getSimpleName());
             
             if (message instanceof ActionMessage actionMsg) {
                 if (gameSession != null) {
@@ -96,13 +100,13 @@ public class GameServer {
      * 
      * @throws IllegalStateException if server is already running
      */
-    public void start() {
-        logger.info("Starting GameServer with config: {}", config);
+    public void start() throws JsonProcessingException {
+        logger.info("Starting GameServer with config: " + Ansi.YELLOW + "{}" + Ansi.RESET, objectMapper.writeValueAsString(config));
         
         try {
             // Start WebSocket server
             webSocketServer.start();
-            logger.info("WebSocket server started on port {}", config.port());
+            logger.info("WebSocket server started on port " + Ansi.YELLOW + "{}" + Ansi.RESET, config.port());
             
             // Create GameParams
             GameParams gameParams = new GameParams(
@@ -120,7 +124,7 @@ public class GameServer {
             logger.info("GameServer started successfully");
             
         } catch (Exception e) {
-            logger.error("Failed to start GameServer", e);
+            logger.error(Ansi.RED + "Failed to start GameServer" + Ansi.RESET, e);
             stop();
             throw new RuntimeException("Failed to start GameServer", e);
         }
@@ -155,9 +159,9 @@ public class GameServer {
             logger.info("WebSocket server stopped");
             
             logger.info("GameServer stopped successfully");
-            
+            System.exit(0);
         } catch (Exception e) {
-            logger.error("Error during GameServer shutdown", e);
+            logger.error(Ansi.RED + "Error during GameServer shutdown" + Ansi.RESET, e);
         }
     }
     

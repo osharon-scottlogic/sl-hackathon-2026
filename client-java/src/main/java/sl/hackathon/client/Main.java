@@ -3,6 +3,7 @@ package sl.hackathon.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.client.api.ServerAPI;
+import sl.hackathon.client.util.Ansi;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -25,11 +26,11 @@ public class Main {
         
         // Parse server URL from arguments, environment, or use default
         String serverURL = getServerURL(args);
-        logger.info("Server URL: {}", serverURL);
+        logger.info("Server URL: " + Ansi.YELLOW + "{}" + Ansi.RESET, serverURL);
         
         // Parse player ID from environment or generate default
         String playerId = getPlayerId();
-        logger.info("Player ID: {}", playerId);
+        logger.info("Player ID: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
         
         // Create components
         ServerAPI serverAPI = null;
@@ -42,7 +43,7 @@ public class Main {
             
             // Instantiate Bot (using StrategicBot as default)
             Bot bot = new StrategicBot();
-            logger.info("Bot created: {}", bot.getClass().getSimpleName());
+            logger.info("Bot created: " + Ansi.YELLOW + "{}" + Ansi.RESET, bot.getClass().getSimpleName());
             
             // Instantiate Orchestrator
             orchestrator = new Orchestrator();
@@ -53,7 +54,7 @@ public class Main {
             logger.info("Orchestrator initialized");
             
             // Connect to server
-            logger.info("Connecting to server at {}...", serverURL);
+            logger.info("Connecting to server at " + Ansi.YELLOW + "{}" + Ansi.RESET + "...", serverURL);
             serverAPI.connect(serverURL);
             logger.info("Successfully connected to server");
             
@@ -72,7 +73,7 @@ public class Main {
                     finalServerAPI.close();
                     logger.info("Client shutdown complete");
                 } catch (Exception e) {
-                    logger.error("Error during shutdown", e);
+                    logger.error(Ansi.RED + "Error during shutdown" + Ansi.RESET, e);
                 }
                 shutdownLatch.countDown();
             }));
@@ -86,7 +87,7 @@ public class Main {
             logger.info("Main thread interrupted");
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            logger.error("Fatal error in client", e);
+            logger.error(Ansi.RED + "Fatal error in client" + Ansi.RESET, e);
             System.exit(1);
         } finally {
             // Cleanup on exit
@@ -98,7 +99,7 @@ public class Main {
                     serverAPI.close();
                 }
             } catch (Exception e) {
-                logger.error("Error during cleanup", e);
+                logger.error(Ansi.RED + "Error during cleanup" + Ansi.RESET, e);
             }
         }
     }

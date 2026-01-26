@@ -1,5 +1,6 @@
 package sl.hackathon.server.orchestration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,17 +32,27 @@ class GameServerTest {
     private MapConfig mapConfig;
     private GameServer gameServer;
     
+    // Use random port to avoid "Address already in use" errors between tests
+    private static int getAvailablePort() {
+        return 8081 + (int) (Math.random() * 1000);
+    }
+    
     @BeforeEach
     void setUp() {
         // Create mock game engine
         mockEngine = mock(GameEngine.class);
         
-        // Create valid configuration
+        // Setup default mock behaviors
+        when(mockEngine.getActivePlayers()).thenReturn(java.util.List.of());
+        when(mockEngine.getGameStateHistory()).thenReturn(java.util.List.of());
+        when(mockEngine.getWinnerId()).thenReturn(null);
+        
+        // Create valid configuration with random port
         Dimension dimension = new Dimension(10, 10);
         Position[] walls = new Position[]{new Position(5, 5)};
         Position[] baseLocations = new Position[]{new Position(1, 1), new Position(9, 9)};
         mapConfig = new MapConfig(dimension, walls, baseLocations);
-        config = new ServerConfig(8081, mapConfig, 200L); // Use non-default port to avoid conflicts
+        config = new ServerConfig(getAvailablePort(), mapConfig, 200L); // Use random port to avoid conflicts
         
         // Reset static state in WebSocketAdapter
         WebSocketAdapter.reset();
@@ -52,6 +63,8 @@ class GameServerTest {
         if (gameServer != null) {
             try {
                 gameServer.stop();
+                // Give the server time to release the port
+                Thread.sleep(100);
             } catch (Exception e) {
                 // Ignore cleanup errors
             }
@@ -84,7 +97,7 @@ class GameServerTest {
     }
     
     @Test
-    void wireHandlers_SetsClientRegistryInWebSocketAdapter() {
+    void wireHandlers_SetsClientRegistryInWebSocketAdapter() throws JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
@@ -101,7 +114,7 @@ class GameServerTest {
     }
     
     @Test
-    void wireHandlers_SetsMessageHandlerInWebSocketAdapter() {
+    void wireHandlers_SetsMessageHandlerInWebSocketAdapter() throws JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
@@ -118,7 +131,7 @@ class GameServerTest {
     }
     
     @Test
-    void onClientConnect_CallsGameEngineAddPlayer() {
+    void onClientConnect_CallsGameEngineAddPlayer() throws JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
@@ -140,7 +153,7 @@ class GameServerTest {
     }
     
     @Test
-    void onClientDisconnect_CallsGameEngineRemovePlayer() {
+    void onClientDisconnect_CallsGameEngineRemovePlayer() throws JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
@@ -160,12 +173,14 @@ class GameServerTest {
     }
     
     @Test
-    void onMessage_WithActionMessage_CallsGameSessionSubmitAction() throws InterruptedException {
+    void onMessage_WithActionMessage_CallsGameSessionSubmitAction() throws InterruptedException, JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
-        // Mock the engine to return a valid game state
+        // Mock the engine to return a valid game state and active players
         when(mockEngine.initialize(any())).thenReturn(new GameState(new Unit[]{}, 0));
+        when(mockEngine.getActivePlayers()).thenReturn(java.util.List.of("player1"));
+        when(mockEngine.getGameState()).thenReturn(new GameState(new Unit[]{}, 0));
         when(mockEngine.isGameEnded()).thenReturn(false).thenReturn(true); // End after one turn
         
         // Start the server
@@ -194,7 +209,7 @@ class GameServerTest {
     }
     
     @Test
-    void onMessage_WithNonActionMessage_DoesNothing() {
+    void onMessage_WithNonActionMessage_DoesNothing() throws JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
@@ -217,7 +232,7 @@ class GameServerTest {
     }
     
     @Test
-    void start_InitializesWebSocketServer() {
+    void start_InitializesWebSocketServer() throws JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
@@ -234,12 +249,14 @@ class GameServerTest {
     }
     
     @Test
-    void start_CreatesGameSessionThread() throws InterruptedException {
+    void start_CreatesGameSessionThread() throws InterruptedException, JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
         // Mock the engine
         when(mockEngine.initialize(any())).thenReturn(new GameState(new Unit[]{}, 0));
+        when(mockEngine.getActivePlayers()).thenReturn(java.util.List.of("player1"));
+        when(mockEngine.getGameState()).thenReturn(new GameState(new Unit[]{}, 0));
         when(mockEngine.isGameEnded()).thenReturn(false).thenReturn(true); // One turn then end
         
         // Act
@@ -255,12 +272,14 @@ class GameServerTest {
     }
     
     @Test
-    void stop_ShutsDownGameSession() throws InterruptedException {
+    void stop_ShutsDownGameSession() throws InterruptedException, JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
         // Mock the engine
         when(mockEngine.initialize(any())).thenReturn(new GameState(new Unit[]{}, 0));
+        when(mockEngine.getActivePlayers()).thenReturn(java.util.List.of("player1"));
+        when(mockEngine.getGameState()).thenReturn(new GameState(new Unit[]{}, 0));
         when(mockEngine.isGameEnded()).thenReturn(false); // Keep running
         
         gameServer.start();
@@ -277,12 +296,14 @@ class GameServerTest {
     }
     
     @Test
-    void stop_WaitsForGameSessionTermination() throws InterruptedException {
+    void stop_WaitsForGameSessionTermination() throws InterruptedException, JsonProcessingException {
         // Arrange
         gameServer = new GameServer(config, mockEngine);
         
         // Mock the engine to simulate a long-running game
         when(mockEngine.initialize(any())).thenReturn(new GameState(new Unit[]{}, 0));
+        when(mockEngine.getActivePlayers()).thenReturn(java.util.List.of("player1"));
+        when(mockEngine.getGameState()).thenReturn(new GameState(new Unit[]{}, 0));
         when(mockEngine.isGameEnded()).thenReturn(false); // Keep running
         
         gameServer.start();
@@ -304,6 +325,8 @@ class GameServerTest {
         
         // Mock the engine
         when(mockEngine.initialize(any())).thenReturn(new GameState(new Unit[]{}, 0));
+        when(mockEngine.getActivePlayers()).thenReturn(java.util.List.of("player1"));
+        when(mockEngine.getGameState()).thenReturn(new GameState(new Unit[]{}, 0));
         when(mockEngine.isGameEnded()).thenReturn(false).thenReturn(true);
         
         // Act - Start

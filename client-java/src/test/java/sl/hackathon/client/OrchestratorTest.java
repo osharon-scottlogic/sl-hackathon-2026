@@ -306,7 +306,9 @@ class OrchestratorTest {
         
         // Verify log content
         String logContent = Files.readString(logFiles[0].toPath());
-        assertTrue(logContent.contains(testPlayerId), "Log should contain player ID");
+        assertTrue(logContent.contains("\"players\""), "Log should contain players array");
+        assertTrue(logContent.contains("\"mapDimensions\""), "Log should contain map dimensions");
+        assertTrue(logContent.contains("\"walls\""), "Log should contain walls");
         assertTrue(logContent.contains("\"winner\""), "Log should contain winner field");
     }
     

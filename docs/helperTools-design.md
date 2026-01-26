@@ -34,15 +34,6 @@
 
 **Complexity**: O(width × height) in worst case.
 
-**Example**:
-
-```java
-Position start = new Position(1, 1);
-Position goal = new Position(10, 10);
-List<Direction> path = HelperTools.findShortestPath(mapLayout, start, goal);
-// Returns: [E, E, E, NE, NE, N] or similar
-```
-
 **Returns**: List of directions to follow; empty list if `start == goal`;
 
 #### 1.2 `findPathAvoiding(MapLayout map, Position start, Position goal, Set<Position> dangerZones) -> List<Direction>`
@@ -63,21 +54,6 @@ List<Direction> path = HelperTools.findShortestPath(mapLayout, start, goal);
 
 **Complexity**: O(width × height).
 
-**Example**:
-
-```java
-Set<Position> dangerZones = new HashSet<>(enemyPawns.stream()
-  .map(Pawn::getPosition)
-  .collect(Collectors.toList()));
-
-List<Direction> safePath = HelperTools.findPathAvoiding(
-  mapLayout,
-  myPawn.getPosition(),
-  foodPos,
-  dangerZones
-);
-```
-
 #### 1.3 `getReachablePositions(MapLayout map, Position start, int maxSteps) -> Set<Position>`**
 
 **Input**:
@@ -95,20 +71,13 @@ List<Direction> safePath = HelperTools.findPathAvoiding(
 
 **Complexity**: O(width × height) for unlimited steps; O(maxSteps²) for bounded steps.
 
-**Example**:
-
-```java
-Set<Position> reachable = HelperTools.getReachablePositions(mapLayout, myPawnPos, 5);
-boolean canReachFood = reachable.contains(foodPos);
-```
-
 ### 2. Proximity & Target Finding
 
-#### 2.1 `findClosestFood(GameState gameState, Position position) -> Optional<Position>`
+#### 2.1 `findClosestFood(Unit[] units, Position position) -> Optional<Position>`
 
 **Input**:
 
-- GameState gameState,
+- Map<String, Unit> currentState (bot's internal game state with all current units),
 - Position position
 
 **Purpose**: Locate the closest food unit to a given position.
@@ -120,28 +89,7 @@ boolean canReachFood = reachable.contains(foodPos);
 
 **Complexity**: O(num_food_units).
 
-**Example**:
-
-```java
-Optional<Position> closestFood = HelperTools.findClosestFood(gameState, myPawn.getPosition());
-
-if (closestFood.isPresent()) {
-  List<Direction> pathToFood = HelperTools.findShortestPath(
-    gameState.getMapLayout(),
-    myPawn.getPosition(),
-    closestFood.get()
-  );
-}
-```
-
-#### 2.2 `findClosestEnemy(GameState gameState, Position position) -> Optional<Pawn>`
-
-```java
-public static Optional<Pawn> findClosestEnemy(
-  GameState gameState,
-  Position position
-)
-```
+#### 2.2 `findClosestEnemy(Unit[] units, Position position) -> Optional<Pawn>`
 
 **Purpose**: Find the closest enemy pawn to a given position.
 
@@ -151,20 +99,12 @@ public static Optional<Pawn> findClosestEnemy(
 
 **Complexity**: O(num_enemy_pawns).
 
-**Example**:
 
-```java
-Optional<Pawn> threat = HelperTools.findClosestEnemy(gameState, myPawn.getPosition());
-if (threat.isPresent()) {
-  // Plan to avoid or chase threat.pawn
-}
-```
-
-#### 2.3 `findAllEnemiesWithinDistance(GameState gameState, Position position, int distance) -> List<Pawn>`
+#### 2.3 `findAllEnemiesWithinDistance(Map<String, Unit> currentState, Position position, int distance) -> List<Pawn>`
 
 **Input**:
 
-- GameState gameState,
+- Map<String, Unit> currentState,
 - Position position,
 - int distance
 
@@ -175,15 +115,6 @@ if (threat.isPresent()) {
 - Useful for threat assessment (e.g., "are there enemies within 3 tiles?").
 
 **Complexity**: O(num_enemy_pawns).
-
-**Example**:
-
-```java
-List<Pawn> threats = HelperTools.findAllEnemiesWithinDistance(gameState, myPawn.getPosition(), 3);
-if (!threats.isEmpty()) {
-  // Multiple nearby threats; consider defensive strategy.
-}
-```
 
 #### 2.4 `distanceTo(Position from, Position to, MapLayout map) -> int`
 
@@ -202,19 +133,12 @@ if (!threats.isEmpty()) {
 
 **Complexity**: O(width × height).
 
-**Example**:
-
-```java
-int stepsToFood = HelperTools.distanceTo(myPawn.getPosition(), foodPos, mapLayout);
-int stepsToEnemy = HelperTools.distanceTo(myPawn.getPosition(), enemy.getPosition(), mapLayout);
-```
-
 ### 3. Collision & Threat Assessment
 
-#### 3.1 `predictCollisions(GameState gameState, List<Action> actions) -> CollisionPrediction`
+#### 3.1 `predictCollisions(Unit[], List<Action> actions) -> CollisionPrediction`
 
 **Input**:
-- GameState gameState,
+- Unit[] list of all units,
 - List<Action> actions
 
 **Output** (CollisionPrediction record):
@@ -232,51 +156,26 @@ int stepsToEnemy = HelperTools.distanceTo(myPawn.getPosition(), enemy.getPositio
 
 **Complexity**: O(num_pawns + num_food) for collision detection.
 
-**Example**:
-
-```java
-List<Action> proposedActions = planner.generateCandidateActions(gameState);
-CollisionPrediction prediction = HelperTools.predictCollisions(gameState, proposedActions);
-
-// Filter out suicidal actions
-List<Action> safeActions = proposedActions.stream()
-  .filter(action -> !prediction.pawnWillDie.getOrDefault(action.getPawnId(), false))
-  .collect(Collectors.toList());
-```
-
-#### 3.2 `isPositionSafe(GameState gameState, Position position) -> boolean`
+#### 3.2 `isPositionSafe(Unit[] units, Position position) -> boolean`
 
 **Input**:
 
-- GameState gameState,
+- Unit[] units,
 - Position position
 
 **Purpose**: Determine if a position is safe (no enemy pawns, not a wall, not the opponent's base).
 
-**Algorithm**: Lookup in gameState.
+**Algorithm**: Lookup in currentState.
 
 **Complexity**: O(1) to O(num_enemy_pawns) depending on implementation.
 
-**Example**:
-
-```java
-// Move pawn only to safe positions
-List<Direction> safeDirections = Direction.ALL
-  .stream()
-  .filter(dir -> {
-    Position newPos = myPawn.getPosition().move(dir);
-    return isPositionSafe(gameState, newPos);
-  })
-  .collect(Collectors.toList());
-```
-
 ---
 
-#### 3.3 `getEnemiesAtPosition(GameState gameState, Position position) -> List<Pawn>`
+#### 3.3 `getEnemiesAtPosition(Unit[] units, Position position) -> List<Pawn>`
 
 **Input**:
 
-- GameState gameState,
+- Units[] units,
 - Position position
 
 **Purpose**: Get all enemy pawns at a specific position.
@@ -285,22 +184,13 @@ List<Direction> safeDirections = Direction.ALL
 
 **Complexity**: O(num_enemy_pawns).
 
-**Example**:
-
-```java
-List<Pawn> colliders = HelperTools.getEnemiesAtPosition(gameState, position);
-if (colliders.size() > 0) {
-  // This position has enemies; risky to move there.
-}
-```
-
 ### 4. Strategic Planning & Analysis
 
-#### 4.1 `findAllFoodLocations(GameState gameState) -> List<Position>`
+#### 4.1 `findAllFoodLocations(Unit[] units) -> List<Position>`
 
 **Input**:
 
-- GameState gameState
+- Unit[] unit
 
 **Purpose**: Get all current food positions, sorted by distance from a reference point.
 
@@ -308,24 +198,9 @@ if (colliders.size() > 0) {
 
 **Complexity**: O(num_food) or O(num_food × log(num_food)) with sorting.
 
-**Example**:
-
-```java
-List<Position> foods = HelperTools.findAllFoodLocations(gameState);
-List<Position> foodByProximity = foods.stream()
-  .sorted(Comparator.comparingInt(
-    pos -> HelperTools.distanceTo(myPawn.getPosition(), pos, mapLayout)
-  ))
-  .collect(Collectors.toList());
-```
-
 ---
 
-**4.2 `getFriendlyPawnCount(GameState gameState) -> int`**
-
-```java
-public static int getFriendlyPawnCount(GameState gameState)
-```
+**4.2 `getFriendlyPawnCount(Unit[] units) -> int`**
 
 **Purpose**: Return the number of friendly pawns alive.
 
@@ -333,26 +208,9 @@ public static int getFriendlyPawnCount(GameState gameState)
 
 **Complexity**: O(num_friendly_pawns).
 
-**Example**:
-
-```java
-int myPawnCount = HelperTools.getFriendlyPawnCount(gameState);
-int enemyPawnCount = HelperTools.getEnemyPawnCount(gameState);
-
-if (myPawnCount < enemyPawnCount) {
-  // We're outnumbered; prioritize food collection.
-} else {
-  // We have numerical advantage; consider aggressive strategy.
-}
-```
-
 ---
 
-**4.3 `getEnemyPawnCount(GameState gameState) -> int`**
-
-```java
-public static int getEnemyPawnCount(GameState gameState)
-```
+**4.3 `getEnemyPawnCount(Unit[] units) -> int`**
 
 **Purpose**: Return the number of enemy pawns alive.
 
@@ -360,9 +218,6 @@ public static int getEnemyPawnCount(GameState gameState)
 
 **4.4 `getCentroidOfPawns(List<Pawn> pawns) -> Position`**
 
-```java
-public static Position getCentroidOfPawns(List<Pawn> pawns)
-```
 
 **Purpose**: Calculate the average (centroid) position of a group of pawns.
 
@@ -370,26 +225,9 @@ public static Position getCentroidOfPawns(List<Pawn> pawns)
 
 **Complexity**: O(num_pawns).
 
-**Example**:
-
-```java
-// Group pawns together for coordinated defense
-Position myPawnCentroid = HelperTools.getCentroidOfPawns(gameState.getFriendlyPawns());
-Position enemyCentroid = HelperTools.getCentroidOfPawns(gameState.getEnemyPawns());
-
-// Move pawns toward centroid for mutual support
-```
-
 ---
 
-**4.5 `isPositionAdjacentToBase(GameState gameState, Position position) -> boolean`**
-
-```java
-public static boolean isPositionAdjacentToBase(
-  GameState gameState,
-  Position position
-)
-```
+**4.5 `isPositionAdjacentToBase(Unit[] units Position position) -> boolean`**
 
 **Purpose**: Check if a position is adjacent to (within 1 step of) either base.
 
@@ -397,24 +235,9 @@ public static boolean isPositionAdjacentToBase(
 
 **Complexity**: O(1).
 
-**Example**:
-
-```java
-if (HelperTools.isPositionAdjacentToBase(gameState, position)) {
-  // Danger zone; enemy could storm the base next turn.
-}
-```
-
 ---
 
-**4.6 `isPositionAdjacentToEnemy(GameState gameState, Position position) -> boolean`**
-
-```java
-public static boolean isPositionAdjacentToEnemy(
-  GameState gameState,
-  Position position
-)
-```
+**4.6 `isPositionAdjacentToEnemy(Unit[] unit, Position position) -> boolean`**
 
 **Purpose**: Check if a position is adjacent to any enemy pawn.
 
@@ -422,21 +245,10 @@ public static boolean isPositionAdjacentToEnemy(
 
 **Complexity**: O(num_enemy_pawns).
 
-**Example**:
-
-```java
-if (HelperTools.isPositionAdjacentToEnemy(gameState, position)) {
-  // Risk of immediate collision; avoid or prepare for combat.
-}
-```
-
 ---
 
-**4.7 `generateRandomAction(GameState gameState, Pawn pawn) -> Action`**
+**4.7 `generateRandomAction(Unit[] unit, Pawn pawn) -> Action`**
 
-```java
-public static Action generateRandomAction(GameState gameState, Pawn pawn)
-```
 
 **Purpose**: Generate a random legal action for a pawn (fallback for timeout or simple agents).
 
@@ -444,24 +256,10 @@ public static Action generateRandomAction(GameState gameState, Pawn pawn)
 
 **Complexity**: O(num_directions × attempts).
 
-**Example**:
-
-```java
-// Timeout occurred; use random fallback action.
-Action fallbackAction = HelperTools.generateRandomAction(gameState, myPawn);
-```
 
 ---
 
-**4.8 `getPawnsNearFood(GameState gameState, Position foodPos, int distance) -> List<Pawn>`**
-
-```java
-public static List<Pawn> getPawnsNearFood(
-  GameState gameState,
-  Position foodPos,
-  int distance
-)
-```
+**4.8 `getPawnsNearFood(Unit[] unit, Position foodPos, int distance) -> List<Pawn>`**
 
 **Purpose**: Find all (friendly or enemy) pawns within `distance` of a food unit.
 
@@ -469,33 +267,9 @@ public static List<Pawn> getPawnsNearFood(
 
 **Complexity**: O(num_pawns).
 
-**Example**:
-
-```java
-// A food unit just appeared; see who can reach it first.
-List<Pawn> friendlyNearFood = gameState.getFriendlyPawns().stream()
-  .filter(p -> HelperTools.distanceTo(p.getPosition(), foodPos, mapLayout) <= 3)
-  .collect(Collectors.toList());
-
-List<Pawn> enemyNearFood = gameState.getEnemyPawns().stream()
-  .filter(p -> HelperTools.distanceTo(p.getPosition(), foodPos, mapLayout) <= 3)
-  .collect(Collectors.toList());
-
-if (friendlyNearFood.size() > enemyNearFood.size()) {
-  // We have a chance to claim the food; send nearest pawn.
-}
-```
-
 ---
 
 **4.9 `identifyStrategicPositions(MapLayout map, Position basePos) -> List<Position>`**
-
-```java
-public static List<Position> identifyStrategicPositions(
-  MapLayout map,
-  Position basePos
-)
-```
 
 **Purpose**: Identify key choke points or defensive positions near a base.
 
@@ -505,43 +279,16 @@ public static List<Position> identifyStrategicPositions(
 
 **Complexity**: O(width × height).
 
-**Example**:
-```java
-List<Position> defensivePositions = HelperTools.identifyStrategicPositions(
-  mapLayout,
-  gameState.getMapLayout().getPlayerABase()
-);
-
-// Direct some pawns to defensive positions.
-```
-
 ---
 
 **4.10 `getWallsNear(MapLayout map, Position position, int radius) -> Set<Position>`**
 
-```java
-public static Set<Position> getWallsNear(
-  MapLayout map,
-  Position position,
-  int radius
-)
-```
 
 **Purpose**: Find all wall positions within `radius` steps of a position.
 
 **Algorithm**: Filter wall positions by distance.
 
 **Complexity**: O(num_walls).
-
-**Example**:
-
-```java
-// Check terrain around pawn for cover
-Set<Position> nearbyWalls = HelperTools.getWallsNear(mapLayout, myPawn.getPosition(), 2);
-if (nearbyWalls.size() > 0) {
-  // Consider moving toward wall for cover.
-}
-```
 
 ## Performance Considerations
 

@@ -81,3 +81,5 @@ ehthumbs.db
 # Application properties with sensitive data
 application-local.properties
 application-local.yml
+
+!**/node_modules/
