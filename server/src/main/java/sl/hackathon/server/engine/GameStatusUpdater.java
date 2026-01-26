@@ -10,10 +10,11 @@ public interface GameStatusUpdater {
      * Updates the game state by applying a set of actions and resolving collisions.
      *
      * @param gameState the current game state
+     * @param playerId id of the current player
      * @param actions the actions to apply
      * @return the updated game state
      */
-    GameState update(GameState gameState, Action[] actions);
+    GameState update(GameState gameState, String playerId, Action[] actions);
 
     /**
      * Checks if the game has ended based on the current game state.

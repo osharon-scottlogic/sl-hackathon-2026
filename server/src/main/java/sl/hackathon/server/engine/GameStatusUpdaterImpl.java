@@ -3,7 +3,6 @@ package sl.hackathon.server.engine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.*;
-import sl.hackathon.server.util.Ansi;
 
 import java.util.*;
 
@@ -19,23 +18,22 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
     /**
      * Updates the game state by applying a set of actions and resolving collisions.
      *
-     * @param currentUpdate the current game update (contains all current units in addedOrModified for now)
-     * @param playerId the player making the actions
+     * @param gameState the current game state
      * @param actions the actions to apply
-     * @return a GameUpdate containing only units that changed and IDs of removed units
+     * @return the updated game state
      */
     @Override
-    public GameState update(GameState currentUpdate, String playerId, Action[] actions) {
-        if (currentUpdate == null || currentUpdate.addedOrModified() == null) {
-            return currentUpdate;
+    public GameState update(GameState gameState, String playerId, Action[] actions) {
+        if (gameState == null || gameState.units() == null) {
+            return gameState;
         }
 
-        // Create a copy of units for modification (currently all units are in addedOrModified)
-        List<Unit> units = new ArrayList<>(Arrays.asList(currentUpdate.addedOrModified()));
+        // Create a copy of units for modification
+        List<Unit> units = new ArrayList<>(Arrays.asList(gameState.units()));
 
         // If no actions, return unchanged state
         if (actions == null || actions.length == 0) {
-            return currentUpdate;
+            return gameState;
         }
 
         // Build a map of action by unit ID for quick lookup
@@ -81,10 +79,9 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
         finalUnitsList.addAll(getNewlyAddedUnits(unitsToAdd,findBase(playerId, units)));
         Unit[] finalUnits = finalUnitsList.toArray(Unit[]::new);
 
-        // TODO: Generate proper delta update by comparing with previous state
-        // For now, returning all units in addedOrModified and empty removed array
-        return new GameState(finalUnits, new String[0], currentUpdate.startAt());
+        return new GameState(finalUnits, gameState.startAt());
     }
+
 
     private List<Unit> getNewlyAddedUnits(int unitsToAdd, Unit baseUnit) {
         List<Unit> units = new ArrayList<>();

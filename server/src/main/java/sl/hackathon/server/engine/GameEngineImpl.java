@@ -123,8 +123,8 @@ public class GameEngineImpl implements GameEngine {
             return false;
         }
 
-        // Update game state
-        currentGameState = statusUpdater.update(currentGameState, actions);
+        // Update game stat
+        currentGameState = statusUpdater.update(currentGameState, playerId, actions);
 
         // Spawn food after state update
         List<Unit> updatedUnits = new ArrayList<>(Arrays.asList(currentGameState.units()));
