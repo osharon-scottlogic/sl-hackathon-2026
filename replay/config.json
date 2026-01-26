@@ -1,0 +1,7 @@
+{
+  "gameLogsPath": "../client-java/game-logs",
+  "cellSize": 5,
+  "playbackSpeed": 1000,
+  "serverPort": 8081,
+  "graphHeight": 150
+}

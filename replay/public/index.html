@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Replay Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Game Replay Viewer</h1>
+        </header>
+        
+        <div class="main-content">
+            <!-- Left Panel: Game List -->
+            <aside class="game-list-panel">
+                <h2>Game List</h2>
+                <div id="gameList" class="game-list">
+                    <p class="loading">Loading games...</p>
+                </div>
+            </aside>
+            
+            <!-- Right Panel: Viewer -->
+            <main class="viewer-panel">
+                <div id="canvasContainer" class="canvas-container">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
+                
+                <div class="controls">
+                    <input type="range" id="turnSlider" min="0" max="0" value="0" disabled>
+                    <div class="control-buttons">
+                        <button id="playButton" disabled>▶ Play</button>
+                        <span id="turnCounter">Turn: 0/0</span>
+                    </div>
+                </div>
+                
+                <div class="graph-container">
+                    <h3>Units Over Time</h3>
+                    <canvas id="graphCanvas"></canvas>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+    <script src="renderer.js"></script>
+    <script src="graph.js"></script>
+</body>
+</html>
