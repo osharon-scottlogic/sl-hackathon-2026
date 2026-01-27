@@ -14,6 +14,11 @@ import static sl.hackathon.server.dtos.UnitType.*;
 public class GameStatusUpdaterImpl implements GameStatusUpdater {
 
     private static final Logger logger = LoggerFactory.getLogger(GameStatusUpdaterImpl.class);
+    private final UnitIdGenerator unitIdGenerator;
+
+    public GameStatusUpdaterImpl(UnitIdGenerator unitIdGenerator) {
+        this.unitIdGenerator = unitIdGenerator;
+    }
 
     /**
      * Updates the game state by applying a set of actions and resolving collisions.
@@ -37,15 +42,15 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
         }
 
         // Build a map of action by unit ID for quick lookup
-        Map<String, Action> actionMap = new HashMap<>();
+        Map<Integer, Action> actionMap = new HashMap<>();
         for (Action action : actions) {
-            if (action != null && action.unitId() != null) {
+            if (action != null) {
                 actionMap.put(action.unitId(), action);
             }
         }
 
         // Apply movements: update positions based on actions
-        Map<String, Unit> movedUnits = new HashMap<>();
+        Map<Integer, Unit> movedUnits = new HashMap<>();
         for (Unit unit : units) {
             if (actionMap.containsKey(unit.id())) {
                 Action action = actionMap.get(unit.id());
@@ -58,7 +63,7 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
         }
 
         // Resolve collisions
-        Set<String> unitsToRemove = new HashSet<>();
+        Set<Integer> unitsToRemove = new HashSet<>();
         int unitsToAdd = 0;
         Map<Position, List<Unit>> positionMap = buildPositionMap(movedUnits.values());
 
@@ -87,7 +92,7 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
         List<Unit> units = new ArrayList<>();
         for (int i=0;i<unitsToAdd;i++) {
             units.add(new Unit(
-                "pawn-" + baseUnit.owner() + "-0",
+                unitIdGenerator.nextId(),
                 baseUnit.owner(),
                     UnitType.PAWN,
                     new Position(baseUnit.position().x(), baseUnit.position().y())
@@ -216,7 +221,7 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
      * @param unitsAtPosition the units at the collision position
      * @param unitsToRemove the set of unit IDs to remove (modified by this method)
      */
-    private int resolveCollision(List<Unit> unitsAtPosition, Set<String> unitsToRemove) {
+    private int resolveCollision(List<Unit> unitsAtPosition, Set<Integer> unitsToRemove) {
         // Separate units by type and owner
         List<Unit> pawns = unitsAtPosition.stream().filter(unit->unit.type().equals(PAWN)).toList();
         List<Unit> food = unitsAtPosition.stream().filter(unit->unit.type().equals(FOOD)).toList();
@@ -278,17 +283,5 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
             }
         }
         return null;
-    }
-
-    /**
-     * Finds the base position for a given player.
-     *
-     * @param owner the player ID
-     * @param allUnits all units in the game
-     * @return the position of the player's base, or null if not found
-     */
-    private Position findBasePosition(String owner, Collection<Unit> allUnits) {
-        Unit base = findBase(owner, allUnits);
-        return base!=null ? base.position() : null;
     }
 }

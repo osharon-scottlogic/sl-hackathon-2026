@@ -248,10 +248,10 @@ public class StrategicBot implements Bot {
      * Ensures one action per pawn.
      */
     private Action[] selectBestActionsPerPawn(List<Unit> friendlyPawns, List<Action> safeActions) {
-        Map<String, Action> actionsByPawn = new HashMap<>();
+        Map<Integer, Action> actionsByPawn = new HashMap<>();
 
         // Group safe actions by pawn ID
-        Map<String, List<Action>> groupedByPawn = safeActions.stream()
+        Map<Integer, List<Action>> groupedByPawn = safeActions.stream()
                 .collect(Collectors.groupingBy(Action::unitId));
 
         // Select one action per pawn (first in the list, which has priority)

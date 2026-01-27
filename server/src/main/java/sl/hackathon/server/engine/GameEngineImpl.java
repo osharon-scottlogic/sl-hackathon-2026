@@ -21,6 +21,7 @@ public class GameEngineImpl implements GameEngine {
     private int currentTurn;
     private final ActionValidator actionValidator;
     private final GameStatusUpdater statusUpdater;
+    private final UnitIdGenerator unitIdGenerator;
 
     public GameEngineImpl() {
         this.activePlayers = new ArrayList<>();
@@ -28,7 +29,8 @@ public class GameEngineImpl implements GameEngine {
         this.initialized = false;
         this.currentTurn = 0;
         this.actionValidator = new ActionValidatorImpl();
-        this.statusUpdater = new GameStatusUpdaterImpl();
+        this.unitIdGenerator = new UnitIdGenerator();
+        this.statusUpdater = new GameStatusUpdaterImpl(unitIdGenerator);
     }
 
     /**
@@ -215,7 +217,7 @@ public class GameEngineImpl implements GameEngine {
 
             // Create base unit
             Unit base = new Unit(
-                "base-" + playerId,
+                unitIdGenerator.nextId(),
                 playerId,
                 UnitType.BASE,
                 baseLocation
@@ -224,7 +226,7 @@ public class GameEngineImpl implements GameEngine {
 
             // Create initial pawn near the base (offset by 1)
             Unit pawn = new Unit(
-                "pawn-" + playerId + "-0",
+                unitIdGenerator.nextId(),
                 playerId,
                 UnitType.PAWN,
                 new Position(baseLocation.x() + 1, baseLocation.y())
@@ -276,9 +278,8 @@ public class GameEngineImpl implements GameEngine {
 
             if (!occupiedPositions.contains(foodPos) && !wallPositions.contains(foodPos)) {
                 // Generate unique food ID
-                long foodId = System.currentTimeMillis() + random.nextInt(1000);
                 Unit food = new Unit(
-                    "food-" + foodId,
+                    unitIdGenerator.nextId(),
                     "none",
                     UnitType.FOOD,
                     foodPos

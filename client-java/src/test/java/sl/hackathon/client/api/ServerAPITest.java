@@ -45,7 +45,7 @@ class ServerAPITest {
     @Test
     void testSendWithoutConnection() {
         Action[] actions = new Action[]{
-            new Action("pawn1", Direction.N)
+            new Action(1, Direction.N)
         };
         
         assertThrows(IllegalStateException.class, () -> serverAPI.send("player1", actions));
@@ -68,7 +68,7 @@ class ServerAPITest {
         
         // Create test message
         GameState state = new GameState(
-            new Unit[]{new Unit("unit1", "player1", UnitType.PAWN, new Position(1, 1))},
+            new Unit[]{new Unit(1, "player1", UnitType.PAWN, new Position(1, 1))},
             System.currentTimeMillis()
         );
         
@@ -113,7 +113,7 @@ class ServerAPITest {
         });
         
         GameState state = new GameState(
-            new Unit[]{new Unit("unit1", "player1", UnitType.PAWN, new Position(2, 2))},
+            new Unit[]{new Unit(1, "player1", UnitType.PAWN, new Position(2, 2))},
             System.currentTimeMillis()
         );
         
@@ -264,8 +264,8 @@ class ServerAPITest {
     void testSendActionsFormat() throws Exception {
         // Test that the send method creates proper ActionMessage
         Action[] actions = new Action[]{
-            new Action("pawn1", Direction.N),
-            new Action("pawn2", Direction.SE)
+            new Action(1, Direction.N),
+            new Action(2, Direction.SE)
         };
         
         // We cannot test actual sending without connection,

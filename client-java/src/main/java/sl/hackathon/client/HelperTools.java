@@ -499,7 +499,7 @@ public class HelperTools {
 
                 // Find action for this pawn
                 for (Action action : actions) {
-                    if (action.unitId().equals(unit.id())) {
+                    if (action.unitId() == unit.id()) {
                         newPos = moveUnitInDirection(unit.position(), action.direction(), mapLayout);
                         break;
                     }
@@ -510,7 +510,7 @@ public class HelperTools {
         }
 
         // Track pawns that will die
-        Map<String, Boolean> pawnWillDie = new HashMap<>();
+        Map<Integer, Boolean> pawnWillDie = new HashMap<>();
         for (Unit unit : gameState.units()) {
             if (unit.type() == UnitType.PAWN) {
                 pawnWillDie.put(unit.id(), false);

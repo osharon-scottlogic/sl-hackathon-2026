@@ -97,8 +97,8 @@ class TransportAndRouterIntegrationTest {
     void testSendingActionsViaTransport() {
         // Test that we can serialize and prepare to send actions
         Action[] actions = new Action[]{
-            new Action("pawn1", Direction.N),
-            new Action("pawn2", Direction.E)
+            new Action(1, Direction.N),
+            new Action(2, Direction.E)
         };
         
         ActionMessage actionMessage = new ActionMessage("player1", actions);

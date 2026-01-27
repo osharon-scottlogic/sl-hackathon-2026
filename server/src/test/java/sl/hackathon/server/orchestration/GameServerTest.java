@@ -195,7 +195,7 @@ class GameServerTest {
         
         // Create an action message
         String playerId = "player1";
-        Action[] actions = new Action[]{new Action("pawn-1", Direction.N)};
+        Action[] actions = new Action[]{new Action(1, Direction.N)};
         ActionMessage actionMessage = new ActionMessage("player1", actions);
         
         // Act

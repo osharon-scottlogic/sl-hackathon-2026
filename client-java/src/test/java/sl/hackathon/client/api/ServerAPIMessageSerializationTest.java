@@ -16,8 +16,8 @@ class ServerAPIMessageSerializationTest {
     @Test
     void testActionMessageSerialization() throws Exception {
         Action[] actions = new Action[]{
-            new Action("pawn1", Direction.N),
-            new Action("pawn2", Direction.SE)
+            new Action(1, Direction.N),
+            new Action(2, Direction.SE)
         };
         
         ActionMessage original = new ActionMessage("player1", actions);
@@ -28,7 +28,7 @@ class ServerAPIMessageSerializationTest {
         ActionMessage result = (ActionMessage) deserialized;
         assertEquals("player1", result.getPlayerId());
         assertEquals(2, result.getActions().length);
-        assertEquals("pawn1", result.getActions()[0].unitId());
+        assertEquals(1, result.getActions()[0].unitId());
         assertEquals(Direction.N, result.getActions()[0].direction());
     }
     
@@ -47,7 +47,7 @@ class ServerAPIMessageSerializationTest {
     @Test
     void testStartGameMessageSerialization() throws Exception {
         GameState state = new GameState(
-            new Unit[]{new Unit("u1", "p1", UnitType.BASE, new Position(5, 5))},
+            new Unit[]{new Unit(1, "p1", UnitType.BASE, new Position(5, 5))},
             System.currentTimeMillis()
         );
         
@@ -71,13 +71,13 @@ class ServerAPIMessageSerializationTest {
         StartGameMessage result = (StartGameMessage) deserialized;
         assertNotNull(result.getGameStatusUpdate());
         assertEquals(1, result.getGameStatusUpdate().history().length);
-        assertEquals("u1", result.getGameStatusUpdate().history()[0].units()[0].id());
+        assertEquals(1, result.getGameStatusUpdate().history()[0].units()[0].id());
     }
     
     @Test
     void testNextTurnMessageSerialization() throws Exception {
         GameState state = new GameState(
-            new Unit[]{new Unit("u2", "p2", UnitType.PAWN, new Position(3, 3))},
+            new Unit[]{new Unit(1, "p2", UnitType.PAWN, new Position(3, 3))},
             System.currentTimeMillis()
         );
         NextTurnMessage original = new NextTurnMessage("player2", state);
@@ -150,10 +150,10 @@ class ServerAPIMessageSerializationTest {
     @Test
     void testSerializationWithMultipleUnits() throws Exception {
         Unit[] units = new Unit[]{
-            new Unit("u1", "p1", UnitType.PAWN, new Position(1, 1)),
-            new Unit("u2", "p1", UnitType.PAWN, new Position(2, 2)),
-            new Unit("base", "p1", UnitType.BASE, new Position(0, 0)),
-            new Unit("food1", null, UnitType.FOOD, new Position(5, 5))
+            new Unit(1, "p1", UnitType.PAWN, new Position(1, 1)),
+            new Unit(2, "p1", UnitType.PAWN, new Position(2, 2)),
+            new Unit(3, "p1", UnitType.BASE, new Position(0, 0)),
+            new Unit(4, null, UnitType.FOOD, new Position(5, 5))
         };
         
         GameState state = new GameState(units, System.currentTimeMillis());
@@ -189,8 +189,8 @@ class ServerAPIMessageSerializationTest {
     void testRoundTripSerialization() throws Exception {
         // Test that round-trip serialization preserves data
         Action[] actions = new Action[]{
-            new Action("p1", Direction.NE),
-            new Action("p2", Direction.SW)
+            new Action(1, Direction.NE),
+            new Action(2, Direction.SW)
         };
         
         ActionMessage original = new ActionMessage("player1", actions);

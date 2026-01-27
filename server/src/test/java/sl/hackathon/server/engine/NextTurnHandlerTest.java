@@ -18,7 +18,7 @@ class NextTurnHandlerTest {
 
     @Test
     void testHandleNextTurnWithValidInput() {
-        Unit unit = new Unit("unit-1", "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
         // Should not throw exception
@@ -33,7 +33,7 @@ class NextTurnHandlerTest {
 
     @Test
     void testHandleNextTurnWithNullPlayerId() {
-        Unit unit = new Unit("unit-1", "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
         // Should handle null player ID gracefully
@@ -49,8 +49,8 @@ class NextTurnHandlerTest {
 
     @Test
     void testHandleNextTurnMultipleCalls() {
-        Unit unit1 = new Unit("unit-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit unit2 = new Unit("unit-2", "player-1", UnitType.PAWN, new Position(6, 6));
+        Unit unit1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit2 = new Unit(2, "player-1", UnitType.PAWN, new Position(6, 6));
         GameState gameState = new GameState(new Unit[]{unit1, unit2}, System.currentTimeMillis());
 
         // Multiple calls should work without issue

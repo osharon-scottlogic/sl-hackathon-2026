@@ -53,11 +53,6 @@ public class ActionValidatorImpl implements ActionValidator {
             return new InvalidAction(action, "Action cannot be null", gameState);
         }
 
-        // Validate unitId is not null
-        if (action.unitId() == null) {
-            return new InvalidAction(action, "Unit ID cannot be null", gameState);
-        }
-
         // Check if unit with given ID exists
         Unit unit = findUnitById(gameState, action.unitId());
         if (unit == null) {
@@ -84,13 +79,13 @@ public class ActionValidatorImpl implements ActionValidator {
      * @param unitId the unit ID to search for
      * @return the Unit if found; null otherwise
      */
-    private Unit findUnitById(GameState gameState, String unitId) {
+    private Unit findUnitById(GameState gameState, int unitId) {
         if (gameState == null || gameState.units() == null) {
             return null;
         }
 
         for (Unit unit : gameState.units()) {
-            if (unitId.equals(unit.id())) {
+            if (unitId == unit.id()) {
                 return unit;
             }
         }

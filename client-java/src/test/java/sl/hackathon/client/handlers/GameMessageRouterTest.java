@@ -58,7 +58,7 @@ class GameMessageRouterTest {
         testHandler.setOnStartGame(msg -> latch.countDown());
         
         GameState state = new GameState(
-            new Unit[]{new Unit("u1", "p1", UnitType.PAWN, new Position(1, 1))},
+            new Unit[]{new Unit(1, "p1", UnitType.PAWN, new Position(1, 1))},
             System.currentTimeMillis()
         );
         

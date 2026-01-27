@@ -40,7 +40,7 @@ public class Orchestrator {
     private String playerId;
     
     private MapLayout mapLayout;
-    private GameUpdate currentGameState;
+    private GameState currentGameState;
     
     private final ExecutorService botExecutor = Executors.newSingleThreadExecutor();
     private volatile boolean initialized = false;
@@ -149,7 +149,7 @@ public class Orchestrator {
         
         logger.info("Turn started for player: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
         
-        GameUpdate turnState = message.getGameState();
+        GameState turnState = message.getGameState();
         if (turnState != null) {
             this.currentGameState = turnState;
         }

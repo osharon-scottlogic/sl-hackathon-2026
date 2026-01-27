@@ -146,9 +146,9 @@ class HelperToolsTest {
     @DisplayName("Should find closest food")
     public void testFindClosestFood() {
         Unit[] units = {
-            new Unit("food-1", "system", UnitType.FOOD, new Position(2, 2)),
-            new Unit("food-2", "system", UnitType.FOOD, new Position(6, 6)),
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0))
+            new Unit(1, "system", UnitType.FOOD, new Position(2, 2)),
+            new Unit(2, "system", UnitType.FOOD, new Position(6, 6)),
+            new Unit(3, playerId, UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, 0L);
         Position searcher = new Position(0, 0);
@@ -163,7 +163,7 @@ class HelperToolsTest {
     @DisplayName("Should return empty when no food exists")
     public void testFindClosestFoodNoFood() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -176,32 +176,32 @@ class HelperToolsTest {
     @DisplayName("Should find closest enemy")
     public void testFindClosestEnemy() {
         Unit[] units = {
-            new Unit("enemy-1", "player-2", UnitType.PAWN, new Position(5, 5)),
-            new Unit("enemy-2", "player-2", UnitType.PAWN, new Position(1, 1)),
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0))
+            new Unit(1, "player-2", UnitType.PAWN, new Position(5, 5)),
+            new Unit(2, "player-2", UnitType.PAWN, new Position(1, 1)),
+            new Unit(3, playerId, UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, 0L);
 
         Optional<Unit> closest = HelperTools.findClosestEnemy(gameState, new Position(0, 0), playerId);
 
         assertTrue(closest.isPresent());
-        assertEquals("enemy-2", closest.get().id());
+        assertEquals(2, closest.get().id());
     }
 
     @Test
     @DisplayName("Should find all enemies within distance")
     public void testFindAllEnemiesWithinDistance() {
         Unit[] units = {
-            new Unit("enemy-1", "player-2", UnitType.PAWN, new Position(2, 0)),
-            new Unit("enemy-2", "player-2", UnitType.PAWN, new Position(5, 5)),
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0))
+            new Unit(1, "player-2", UnitType.PAWN, new Position(2, 0)),
+            new Unit(2, "player-2", UnitType.PAWN, new Position(5, 5)),
+            new Unit(3, playerId, UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, 0L);
 
         List<Unit> threats = HelperTools.findAllEnemiesWithinDistance(gameState, new Position(0, 0), 3, playerId);
 
         assertEquals(1, threats.size());
-        assertEquals("enemy-1", threats.get(0).id());
+        assertEquals(1, threats.get(0).id());
     }
 
     @Test
@@ -218,7 +218,7 @@ class HelperToolsTest {
     @DisplayName("Should identify safe positions")
     public void testIsPositionSafe() {
         Unit[] units = {
-            new Unit("enemy-1", "player-2", UnitType.PAWN, new Position(5, 5))
+            new Unit(1, "player-2", UnitType.PAWN, new Position(5, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -242,9 +242,9 @@ class HelperToolsTest {
     @DisplayName("Should find enemies at specific position")
     public void testGetEnemiesAtPosition() {
         Unit[] units = {
-            new Unit("enemy-1", "player-2", UnitType.PAWN, new Position(5, 5)),
-            new Unit("enemy-2", "player-2", UnitType.PAWN, new Position(5, 5)),
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0))
+            new Unit(1, "player-2", UnitType.PAWN, new Position(5, 5)),
+            new Unit(2, "player-2", UnitType.PAWN, new Position(5, 5)),
+            new Unit(3, playerId, UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -259,9 +259,9 @@ class HelperToolsTest {
     @DisplayName("Should find all food locations")
     public void testFindAllFoodLocations() {
         Unit[] units = {
-            new Unit("food-1", "system", UnitType.FOOD, new Position(2, 2)),
-            new Unit("food-2", "system", UnitType.FOOD, new Position(6, 6)),
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0))
+            new Unit(1, "system", UnitType.FOOD, new Position(2, 2)),
+            new Unit(2, "system", UnitType.FOOD, new Position(6, 6)),
+            new Unit(3, playerId, UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -276,9 +276,9 @@ class HelperToolsTest {
     @DisplayName("Should count friendly pawns")
     public void testGetFriendlyPawnCount() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(1, 1)),
-            new Unit("enemy-1", "player-2", UnitType.PAWN, new Position(5, 5))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(1, 1)),
+            new Unit(3, "player-2", UnitType.PAWN, new Position(5, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -291,9 +291,9 @@ class HelperToolsTest {
     @DisplayName("Should count enemy pawns")
     public void testGetEnemyPawnCount() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0)),
-            new Unit("enemy-1", "player-2", UnitType.PAWN, new Position(5, 5)),
-            new Unit("enemy-2", "player-2", UnitType.PAWN, new Position(6, 6))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0)),
+            new Unit(2, "player-2", UnitType.PAWN, new Position(5, 5)),
+            new Unit(3, "player-2", UnitType.PAWN, new Position(6, 6))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -306,9 +306,9 @@ class HelperToolsTest {
     @DisplayName("Should calculate centroid of units")
     public void testGetCentroidOfUnits() {
         List<Unit> units = Arrays.asList(
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("pawn-3", playerId, UnitType.PAWN, new Position(2, 2))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(3, playerId, UnitType.PAWN, new Position(2, 2))
         );
 
         Position centroid = HelperTools.getCentroidOfUnits(units);
@@ -332,7 +332,7 @@ class HelperToolsTest {
     @DisplayName("Should detect position adjacent to enemy")
     public void testIsPositionAdjacentToEnemy() {
         Unit[] units = {
-            new Unit("enemy-1", "player-2", UnitType.PAWN, new Position(5, 5))
+            new Unit(1, "player-2", UnitType.PAWN, new Position(5, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -346,7 +346,7 @@ class HelperToolsTest {
     @DisplayName("Should generate random action for unit")
     public void testGenerateRandomAction() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4))
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4))
         };
         GameState gameState = new GameState(units, 0L);
         Unit pawn = units[0];
@@ -354,7 +354,7 @@ class HelperToolsTest {
         Action action = HelperTools.generateRandomAction(gameState, pawn, emptyMap);
 
         assertNotNull(action);
-        assertEquals("pawn-1", action.unitId());
+        assertEquals(1, action.unitId());
         assertNotNull(action.direction());
     }
 
@@ -362,7 +362,7 @@ class HelperToolsTest {
     @DisplayName("Should generate valid actions for edge positions")
     public void testGenerateRandomActionEdgePosition() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, 0L);
         Unit pawn = units[0];
@@ -378,9 +378,9 @@ class HelperToolsTest {
     @DisplayName("Should get units near position")
     public void testGetUnitsNearPosition() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(2, 2)),
-            new Unit("pawn-3", playerId, UnitType.PAWN, new Position(7, 7))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(2, 2)),
+            new Unit(3, playerId, UnitType.PAWN, new Position(7, 7))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -434,7 +434,7 @@ class HelperToolsTest {
     public void testLargeGameState() {
         Unit[] units = new Unit[100];
         for (int i = 0; i < 100; i++) {
-            units[i] = new Unit("unit-" + i, playerId, UnitType.PAWN, 
+            units[i] = new Unit(i + 1, playerId, UnitType.PAWN, 
                               new Position(i % 8, i / 8));
         }
         GameState gameState = new GameState(units, 0L);
@@ -446,8 +446,8 @@ class HelperToolsTest {
     @DisplayName("Should handle positions at map boundaries")
     public void testBoundaryPositions() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(7, 7))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(7, 7))
         };
         GameState gameState = new GameState(units, 0L);
 

@@ -8,7 +8,7 @@ import java.util.Set;
  * Used to simulate collisions without modifying the actual game state.
  */
 public record CollisionPrediction(
-    Map<String, Boolean> pawnWillDie,      // unitId -> true if pawn will die
+    Map<Integer, Boolean> pawnWillDie,      // unitId -> true if pawn will die
     Set<Position> foodWillBeConsumed,      // food positions that will be consumed
     boolean baseWillBeLost                 // true if a base will be destroyed
 ) {

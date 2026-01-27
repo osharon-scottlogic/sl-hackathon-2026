@@ -19,8 +19,8 @@ public class MessageCodecTest {
     public void testSerializeActionMessage() {
         // Arrange
         Action[] actions = {
-            new Action("unit-1", Direction.N),
-            new Action("unit-2", Direction.SE)
+            new Action(1, Direction.N),
+            new Action(2, Direction.SE)
         };
         ActionMessage message = new ActionMessage("player-1", actions);
 
@@ -31,14 +31,14 @@ public class MessageCodecTest {
         assertNotNull(json);
         assertTrue(json.contains("\"type\":\"ACTION\""));
         assertTrue(json.contains("\"playerId\":\"player-1\""));
-        assertTrue(json.contains("\"unitId\":\"unit-1\""));
+        assertTrue(json.contains("\"unitId\":1"));
     }
 
     @Test
     @DisplayName("Should deserialize JSON to ActionMessage")
     public void testDeserializeActionMessage() {
         // Arrange
-        String json = "{\"type\":\"ACTION\",\"playerId\":\"player-1\",\"actions\":[{\"unitId\":\"unit-1\",\"direction\":\"N\"},{\"unitId\":\"unit-2\",\"direction\":\"SE\"}]}";
+        String json = "{\"type\":\"ACTION\",\"playerId\":\"player-1\",\"actions\":[{\"unitId\":1,\"direction\":\"N\"},{\"unitId\":2,\"direction\":\"SE\"}]}";
 
         // Act
         Message message = MessageCodec.deserialize(json);
@@ -48,7 +48,7 @@ public class MessageCodecTest {
         ActionMessage actionMsg = (ActionMessage) message;
         assertEquals("player-1", actionMsg.getPlayerId());
         assertEquals(2, actionMsg.getActions().length);
-        assertEquals("unit-1", actionMsg.getActions()[0].unitId());
+        assertEquals(1, actionMsg.getActions()[0].unitId());
         assertEquals(Direction.N, actionMsg.getActions()[0].direction());
     }
 
@@ -56,7 +56,7 @@ public class MessageCodecTest {
     @DisplayName("Should round-trip ActionMessage")
     public void testRoundTripActionMessage() {
         // Arrange
-        Action[] actions = {new Action("unit-1", Direction.NW)};
+        Action[] actions = {new Action(1, Direction.NW)};
         ActionMessage originalMessage = new ActionMessage("player-2", actions);
 
         // Act
@@ -67,7 +67,7 @@ public class MessageCodecTest {
         ActionMessage result = (ActionMessage) roundTrippedMessage;
         assertEquals("player-2", result.getPlayerId());
         assertEquals(1, result.getActions().length);
-        assertEquals("unit-1", result.getActions()[0].unitId());
+        assertEquals(1, result.getActions()[0].unitId());
     }
 
     // ==================== JoinGameMessage Tests ====================
@@ -124,7 +124,7 @@ public class MessageCodecTest {
     public void testSerializeStartGameMessage() {
         // Arrange
         Unit[] units = {
-            new Unit("unit-1", "player-1", UnitType.PAWN, new Position(0, 0))
+            new Unit(1, "player-1", UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, System.currentTimeMillis());
         Dimension dimension = new Dimension(10, 10);
@@ -150,7 +150,7 @@ public class MessageCodecTest {
     @DisplayName("Should deserialize JSON to StartGameMessage")
     public void testDeserializeStartGameMessage() {
         // Arrange
-        String json = "{\"type\":\"START_GAME\",\"gameStatusUpdate\":{\"status\":\"START\",\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"history\":[{\"units\":[{\"id\":\"unit-1\",\"owner\":\"player-1\",\"type\":\"PAWN\",\"position\":{\"x\":0,\"y\":0}}],\"startAt\":1000}],\"winnerId\":null}}";
+        String json = "{\"type\":\"START_GAME\",\"gameStatusUpdate\":{\"status\":\"START\",\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"history\":[{\"units\":[{\"id\":1,\"owner\":\"player-1\",\"type\":\"PAWN\",\"position\":{\"x\":0,\"y\":0}}],\"startAt\":1000}],\"winnerId\":null}}";
 
         // Act
         Message message = MessageCodec.deserialize(json);
@@ -168,7 +168,7 @@ public class MessageCodecTest {
     public void testRoundTripStartGameMessage() {
         // Arrange
         Unit[] units = {
-            new Unit("unit-2", "player-2", UnitType.BASE, new Position(5, 5))
+            new Unit(2, "player-2", UnitType.BASE, new Position(5, 5))
         };
         GameState gameState = new GameState(units, 2000L);
         Dimension dimension = new Dimension(10, 10);
@@ -188,7 +188,7 @@ public class MessageCodecTest {
         assertInstanceOf(StartGameMessage.class, roundTrippedMessage);
         StartGameMessage result = (StartGameMessage) roundTrippedMessage;
         assertEquals(1, result.getGameStatusUpdate().history()[0].units().length);
-        assertEquals("unit-2", result.getGameStatusUpdate().history()[0].units()[0].id());
+        assertEquals(2, result.getGameStatusUpdate().history()[0].units()[0].id());
     }
 
     // ==================== NextTurnMessage Tests ====================
@@ -232,7 +232,7 @@ public class MessageCodecTest {
     public void testRoundTripNextTurnMessage() {
         // Arrange
         Unit[] units = {
-            new Unit("unit-1", "player-1", UnitType.FOOD, new Position(2, 3))
+            new Unit(1, "player-1", UnitType.FOOD, new Position(2, 3))
         };
         GameState gameState = new GameState(units, 5000L);
         NextTurnMessage originalMessage = new NextTurnMessage("player-5", gameState);
@@ -526,9 +526,9 @@ public class MessageCodecTest {
     public void testStartGameMessageWithMultipleUnits() {
         // Arrange
         Unit[] units = {
-            new Unit("unit-1", "player-1", UnitType.PAWN, new Position(0, 0)),
-            new Unit("unit-2", "player-1", UnitType.PAWN, new Position(0, 1)),
-            new Unit("unit-3", "player-2", UnitType.BASE, new Position(9, 9))
+            new Unit(1, "player-1", UnitType.PAWN, new Position(0, 0)),
+            new Unit(2, "player-1", UnitType.PAWN, new Position(0, 1)),
+            new Unit(3, "player-2", UnitType.BASE, new Position(9, 9))
         };
         GameState gameState = new GameState(units, 1000L);
         Dimension dimension = new Dimension(10, 10);

@@ -84,14 +84,14 @@ public class DTOSerializationTest {
     @DisplayName("Should serialize Action record to JSON")
     public void testSerializeAction() throws Exception {
         // Arrange
-        Action action = new Action("unit-1", Direction.N);
+        Action action = new Action(1, Direction.N);
 
         // Act
         String json = objectMapper.writeValueAsString(action);
 
         // Assert
         assertNotNull(json);
-        assertTrue(json.contains("\"unitId\":\"unit-1\""));
+        assertTrue(json.contains("\"unitId\":1"));
         assertTrue(json.contains("\"direction\":\"N\""));
     }
 
@@ -99,14 +99,14 @@ public class DTOSerializationTest {
     @DisplayName("Should deserialize JSON to Action record")
     public void testDeserializeAction() throws Exception {
         // Arrange
-        String json = "{\"unitId\":\"unit-2\",\"direction\":\"SE\"}";
+        String json = "{\"unitId\":2,\"direction\":\"SE\"}";
 
         // Act
         Action action = objectMapper.readValue(json, Action.class);
 
         // Assert
         assertNotNull(action);
-        assertEquals("unit-2", action.unitId());
+        assertEquals(2, action.unitId());
         assertEquals(Direction.SE, action.direction());
     }
 
@@ -117,11 +117,11 @@ public class DTOSerializationTest {
                                  Direction.S, Direction.SW, Direction.W, Direction.NW};
 
         for (Direction dir : directions) {
-            Action action = new Action("unit-test", dir);
+            Action action = new Action(1, dir);
             String json = objectMapper.writeValueAsString(action);
             Action deserialized = objectMapper.readValue(json, Action.class);
             assertEquals(dir, deserialized.direction());
-            assertEquals("unit-test", deserialized.unitId());
+            assertEquals(1, deserialized.unitId());
         }
     }
 
@@ -131,14 +131,14 @@ public class DTOSerializationTest {
     @DisplayName("Should serialize Unit record to JSON")
     public void testSerializeUnit() throws Exception {
         // Arrange
-        Unit unit = new Unit("unit-1", "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
 
         // Act
         String json = objectMapper.writeValueAsString(unit);
 
         // Assert
         assertNotNull(json);
-        assertTrue(json.contains("\"id\":\"unit-1\""));
+        assertTrue(json.contains("\"id\":1"));
         assertTrue(json.contains("\"owner\":\"player-1\""));
         assertTrue(json.contains("\"type\":\"PAWN\""));
         assertTrue(json.contains("\"position\""));
@@ -148,14 +148,14 @@ public class DTOSerializationTest {
     @DisplayName("Should deserialize JSON to Unit record")
     public void testDeserializeUnit() throws Exception {
         // Arrange
-        String json = "{\"id\":\"unit-2\",\"owner\":\"player-2\",\"type\":\"PAWN\",\"position\":{\"x\":3,\"y\":4}}";
+        String json = "{\"id\":2,\"owner\":\"player-2\",\"type\":\"PAWN\",\"position\":{\"x\":3,\"y\":4}}";
 
         // Act
         Unit unit = objectMapper.readValue(json, Unit.class);
 
         // Assert
         assertNotNull(unit);
-        assertEquals("unit-2", unit.id());
+        assertEquals(2, unit.id());
         assertEquals("player-2", unit.owner());
         assertEquals(UnitType.PAWN, unit.type());
         assertEquals(3, unit.position().x());
@@ -168,11 +168,11 @@ public class DTOSerializationTest {
         UnitType[] types = {UnitType.PAWN, UnitType.FOOD, UnitType.BASE};
 
         for (UnitType type : types) {
-            Unit unit = new Unit("unit-" + type, "player-1", type, new Position(0, 0));
+            Unit unit = new Unit(1, "player-1", type, new Position(0, 0));
             String json = objectMapper.writeValueAsString(unit);
             Unit deserialized = objectMapper.readValue(json, Unit.class);
             assertEquals(type, deserialized.type());
-            assertEquals("unit-" + type, deserialized.id());
+            assertEquals(1, deserialized.id());
         }
     }
 
@@ -183,8 +183,8 @@ public class DTOSerializationTest {
     public void testSerializeGameState() throws Exception {
         // Arrange
         Unit[] units = {
-            new Unit("unit-1", "player-1", UnitType.PAWN, new Position(0, 0)),
-            new Unit("unit-2", "player-2", UnitType.BASE, new Position(7, 7))
+            new Unit(1, "player-1", UnitType.PAWN, new Position(0, 0)),
+            new Unit(2, "player-2", UnitType.BASE, new Position(7, 7))
         };
         GameState gameState = new GameState(units, 1000L);
 
@@ -195,14 +195,14 @@ public class DTOSerializationTest {
         assertNotNull(json);
         assertTrue(json.contains("\"units\""));
         assertTrue(json.contains("\"startAt\":1000"));
-        assertTrue(json.contains("\"unit-1\""));
+        assertTrue(json.contains("1"));
     }
 
     @Test
     @DisplayName("Should deserialize JSON to GameState record")
     public void testDeserializeGameState() throws Exception {
         // Arrange
-        String json = "{\"units\":[{\"id\":\"unit-1\",\"owner\":\"player-1\",\"type\":\"PAWN\",\"position\":{\"x\":0,\"y\":0}}],\"startAt\":2000}";
+        String json = "{\"units\":[{\"id\":1,\"owner\":\"player-1\",\"type\":\"PAWN\",\"position\":{\"x\":0,\"y\":0}}],\"startAt\":2000}";
 
         // Act
         GameState gameState = objectMapper.readValue(json, GameState.class);
@@ -211,7 +211,7 @@ public class DTOSerializationTest {
         assertNotNull(gameState);
         assertEquals(2000L, gameState.startAt());
         assertEquals(1, gameState.units().length);
-        assertEquals("unit-1", gameState.units()[0].id());
+        assertEquals(1, gameState.units()[0].id());
     }
 
     @Test
@@ -352,9 +352,9 @@ public class DTOSerializationTest {
     public void testComplexNestedStructures() throws Exception {
         // Arrange - Create a complex nested structure
         Unit[] units = {
-            new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(1, 1)),
-            new Unit("queen-1", "player-1", UnitType.BASE, new Position(3, 3)),
-            new Unit("knight-1", "player-2", UnitType.BASE, new Position(6, 6))
+            new Unit(1, "player-1", UnitType.PAWN, new Position(1, 1)),
+            new Unit(2, "player-1", UnitType.BASE, new Position(3, 3)),
+            new Unit(3, "player-2", UnitType.BASE, new Position(6, 6))
         };
         GameState gameState = new GameState(units, System.currentTimeMillis());
         GameState[] history = {gameState};
@@ -369,7 +369,7 @@ public class DTOSerializationTest {
         assertEquals(GameStatus.PLAYING, deserialized.status());
         assertEquals(8, deserialized.map().dimension().width());
         assertEquals(3, deserialized.history()[0].units().length);
-        assertEquals("pawn-1", deserialized.history()[0].units()[0].id());
+        assertEquals(1, deserialized.history()[0].units()[0].id());
     }
 
     @Test

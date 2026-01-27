@@ -34,9 +34,9 @@ public class BotTest {
     @DisplayName("Should generate actions for all friendly pawns")
     public void testGenerateActionsForAllPawns() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(1, 1)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(2, 2)),
-            new Unit("pawn-3", playerId, UnitType.PAWN, new Position(3, 3))
+            new Unit(1, playerId, UnitType.PAWN, new Position(1, 1)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(2, 2)),
+            new Unit(3, playerId, UnitType.PAWN, new Position(3, 3))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -50,7 +50,7 @@ public class BotTest {
     @DisplayName("Should return empty array for no friendly pawns")
     public void testNoFriendlyPawns() {
         Unit[] units = {
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(5, 5))
+            new Unit(1, enemyId, UnitType.PAWN, new Position(5, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -77,8 +77,8 @@ public class BotTest {
     @DisplayName("Should prioritize moving toward food")
     public void testFoodPrioritization() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(1, 1)),
-            new Unit("food-1", "system", UnitType.FOOD, new Position(2, 1))
+            new Unit(1, playerId, UnitType.PAWN, new Position(1, 1)),
+            new Unit(2, "system", UnitType.FOOD, new Position(2, 1))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -86,7 +86,7 @@ public class BotTest {
 
         assertNotNull(actions);
         assertTrue(actions.length > 0);
-        assertEquals("pawn-1", actions[0].unitId());
+        assertEquals(1, actions[0].unitId());
         // Action should be toward food (East or NE)
         assertNotNull(actions[0].direction());
     }
@@ -95,9 +95,9 @@ public class BotTest {
     @DisplayName("Should choose closest food when multiple available")
     public void testChooseClosestFood() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("food-1", "system", UnitType.FOOD, new Position(3, 4)),  // Distance 1
-            new Unit("food-2", "system", UnitType.FOOD, new Position(1, 1))   // Distance 6
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(2, "system", UnitType.FOOD, new Position(3, 4)),  // Distance 1
+            new Unit(3, "system", UnitType.FOOD, new Position(1, 1))   // Distance 6
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -113,8 +113,8 @@ public class BotTest {
     @DisplayName("Should handle case with no food available")
     public void testNoFoodAvailable() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(1, 1)),
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(5, 5))
+            new Unit(1, playerId, UnitType.PAWN, new Position(1, 1)),
+            new Unit(2, enemyId, UnitType.PAWN, new Position(5, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -130,8 +130,8 @@ public class BotTest {
     @DisplayName("Should evade when enemy is adjacent")
     public void testEvadeAdjacentEnemy() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(4, 3))  // Adjacent
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(2, enemyId, UnitType.PAWN, new Position(4, 3))  // Adjacent
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -155,8 +155,8 @@ public class BotTest {
         MapLayout mapWithWalls = new MapLayout(new Dimension(8, 8), walls);
 
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(4, 3))
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(2, enemyId, UnitType.PAWN, new Position(4, 3))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -170,8 +170,8 @@ public class BotTest {
     @DisplayName("Should not evade when enemy is not adjacent")
     public void testNoEvadeWhenEnemyFar() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0)),
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(7, 7))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0)),
+            new Unit(2, enemyId, UnitType.PAWN, new Position(7, 7))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -187,8 +187,8 @@ public class BotTest {
     @DisplayName("Should avoid actions that result in collision")
     public void testAvoidCollisions() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(3, 4)),
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(5, 4))
+            new Unit(1, playerId, UnitType.PAWN, new Position(3, 4)),
+            new Unit(2, enemyId, UnitType.PAWN, new Position(5, 4))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -205,10 +205,10 @@ public class BotTest {
     @DisplayName("Should filter out deadly actions")
     public void testFilterDeadlyActions() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(2, 4)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(3, 4)),
-            new Unit("food-1", "system", UnitType.FOOD, new Position(5, 4))
+            new Unit(1, playerId, UnitType.PAWN, new Position(2, 4)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(3, enemyId, UnitType.PAWN, new Position(3, 4)),
+            new Unit(4, "system", UnitType.FOOD, new Position(5, 4))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -224,9 +224,9 @@ public class BotTest {
     @DisplayName("Should generate coordinated actions for multiple pawns")
     public void testCoordinatedMultiPawnActions() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(1, 1)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(7, 7)),
-            new Unit("food-1", "system", UnitType.FOOD, new Position(2, 1))
+            new Unit(1, playerId, UnitType.PAWN, new Position(1, 1)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(7, 7)),
+            new Unit(3, "system", UnitType.FOOD, new Position(2, 1))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -235,7 +235,7 @@ public class BotTest {
         assertNotNull(actions);
         assertTrue(actions.length > 0);
         // Each action should have a unique pawn ID
-        Set<String> uniquePawns = new HashSet<>();
+        Set<Integer> uniquePawns = new HashSet<>();
         for (Action action : actions) {
             uniquePawns.add(action.unitId());
         }
@@ -246,9 +246,9 @@ public class BotTest {
     @DisplayName("Should support grouping strategy for mutual support")
     public void testGroupingStrategy() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(1, 1)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(7, 7)),
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(0, 0))
+            new Unit(1, playerId, UnitType.PAWN, new Position(1, 1)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(7, 7)),
+            new Unit(3, enemyId, UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -264,8 +264,8 @@ public class BotTest {
     @DisplayName("Should respect time limit and return actions within deadline")
     public void testRespectTimeLimit() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("food-1", "system", UnitType.FOOD, new Position(5, 5))
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(2, "system", UnitType.FOOD, new Position(5, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -281,7 +281,7 @@ public class BotTest {
     @DisplayName("Should handle very short time limits gracefully")
     public void testVeryShortTimeLimit() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4))
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -297,8 +297,8 @@ public class BotTest {
     @DisplayName("Should return fallback actions on timeout")
     public void testFallbackOnTimeout() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(5, 5))
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(5, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -321,7 +321,7 @@ public class BotTest {
         MapLayout barrierMap = new MapLayout(new Dimension(8, 8), walls);
 
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 3))
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 3))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -335,11 +335,11 @@ public class BotTest {
     @DisplayName("Should avoid deadly fallback actions")
     public void testFallbackAvoidsDeadly() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(4, 3)),
-            new Unit("enemy-2", enemyId, UnitType.PAWN, new Position(5, 4)),
-            new Unit("enemy-3", enemyId, UnitType.PAWN, new Position(3, 4)),
-            new Unit("enemy-4", enemyId, UnitType.PAWN, new Position(4, 5))
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(2, enemyId, UnitType.PAWN, new Position(4, 3)),
+            new Unit(3, enemyId, UnitType.PAWN, new Position(5, 4)),
+            new Unit(4, enemyId, UnitType.PAWN, new Position(3, 4)),
+            new Unit(5, enemyId, UnitType.PAWN, new Position(4, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -356,7 +356,7 @@ public class BotTest {
     public void testExceptionHandling() {
         // Create a complex scenario that might cause errors
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -372,8 +372,8 @@ public class BotTest {
     @DisplayName("Should generate valid actions (unitId and direction exist)")
     public void testGeneratedActionsValid() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("food-1", "system", UnitType.FOOD, new Position(5, 5))
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(2, "system", UnitType.FOOD, new Position(5, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -382,7 +382,7 @@ public class BotTest {
         for (Action action : actions) {
             assertNotNull(action.unitId());
             assertNotNull(action.direction());
-            assertFalse(action.unitId().isEmpty());
+            assertTrue(action.unitId() > 0);
         }
     }
 
@@ -392,13 +392,13 @@ public class BotTest {
     @DisplayName("Should handle complex scenario with multiple threats and goals")
     public void testComplexScenario() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(1, 1)),
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(3, 3)),
-            new Unit("pawn-3", playerId, UnitType.PAWN, new Position(5, 5)),
-            new Unit("enemy-1", enemyId, UnitType.PAWN, new Position(2, 2)),
-            new Unit("enemy-2", enemyId, UnitType.PAWN, new Position(6, 6)),
-            new Unit("food-1", "system", UnitType.FOOD, new Position(1, 2)),
-            new Unit("food-2", "system", UnitType.FOOD, new Position(6, 5))
+            new Unit(1, playerId, UnitType.PAWN, new Position(1, 1)),
+            new Unit(2, playerId, UnitType.PAWN, new Position(3, 3)),
+            new Unit(3, playerId, UnitType.PAWN, new Position(5, 5)),
+            new Unit(4, enemyId, UnitType.PAWN, new Position(2, 2)),
+            new Unit(5, enemyId, UnitType.PAWN, new Position(6, 6)),
+            new Unit(6, "system", UnitType.FOOD, new Position(1, 2)),
+            new Unit(7, "system", UnitType.FOOD, new Position(6, 5))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -415,12 +415,12 @@ public class BotTest {
         List<Unit> units = new ArrayList<>();
         // Add 10 friendly pawns
         for (int i = 0; i < 10; i++) {
-            units.add(new Unit("friendly-" + i, playerId, UnitType.PAWN, 
+            units.add(new Unit(i + 1, playerId, UnitType.PAWN, 
                              new Position(i % 8, i / 8)));
         }
         // Add 5 food
         for (int i = 0; i < 5; i++) {
-            units.add(new Unit("food-" + i, "system", UnitType.FOOD,
+            units.add(new Unit(i + 11, "system", UnitType.FOOD,
                              new Position((i + 5) % 8, (i + 2) % 8)));
         }
 
@@ -438,10 +438,10 @@ public class BotTest {
     @DisplayName("Should handle edge positions (corners and edges)")
     public void testEdgePositions() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0)),      // Corner
-            new Unit("pawn-2", playerId, UnitType.PAWN, new Position(7, 7)),      // Opposite corner
-            new Unit("pawn-3", playerId, UnitType.PAWN, new Position(0, 7)),      // Another corner
-            new Unit("food-1", "system", UnitType.FOOD, new Position(3, 3))       // Center
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0)),      // Corner
+            new Unit(2, playerId, UnitType.PAWN, new Position(7, 7)),      // Opposite corner
+            new Unit(3, playerId, UnitType.PAWN, new Position(0, 7)),      // Another corner
+            new Unit(4, "system", UnitType.FOOD, new Position(3, 3))       // Center
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -457,8 +457,8 @@ public class BotTest {
     @DisplayName("Should produce consistent strategies across multiple calls")
     public void testStrategyConsistency() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(4, 4)),
-            new Unit("food-1", "system", UnitType.FOOD, new Position(5, 4))
+            new Unit(1, playerId, UnitType.PAWN, new Position(4, 4)),
+            new Unit(2, "system", UnitType.FOOD, new Position(5, 4))
         };
         GameState gameState = new GameState(units, 0L);
 
@@ -475,8 +475,8 @@ public class BotTest {
     @DisplayName("Should prefer food collection over random movement")
     public void testFoodPreference() {
         Unit[] units = {
-            new Unit("pawn-1", playerId, UnitType.PAWN, new Position(0, 0)),
-            new Unit("food-1", "system", UnitType.FOOD, new Position(1, 0))
+            new Unit(1, playerId, UnitType.PAWN, new Position(0, 0)),
+            new Unit(2, "system", UnitType.FOOD, new Position(1, 0))
         };
         GameState gameState = new GameState(units, 0L);
 

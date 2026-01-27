@@ -111,10 +111,10 @@ class GameEngineTest {
         boolean hasPlayerTwoBase = false;
         
         for (Unit unit : initialState.units()) {
-            if (unit.id().equals("base-player-1") && unit.type() == UnitType.BASE) {
+            if (unit.owner().equals("player-1") && unit.type() == UnitType.BASE) {
                 hasPlayerOneBase = true;
             }
-            if (unit.id().equals("base-player-2") && unit.type() == UnitType.BASE) {
+            if (unit.owner().equals("player-2") && unit.type() == UnitType.BASE) {
                 hasPlayerTwoBase = true;
             }
         }
@@ -134,10 +134,10 @@ class GameEngineTest {
         boolean hasPlayerTwoPawn = false;
         
         for (Unit unit : initialState.units()) {
-            if (unit.id().contains("pawn-player-1") && unit.type() == UnitType.PAWN) {
+            if (unit.owner().equals("player-1") && unit.type() == UnitType.PAWN) {
                 hasPlayerOnePawn = true;
             }
-            if (unit.id().contains("pawn-player-2") && unit.type() == UnitType.PAWN) {
+            if (unit.owner().equals("player-2") && unit.type() == UnitType.PAWN) {
                 hasPlayerTwoPawn = true;
             }
         }
@@ -154,12 +154,14 @@ class GameEngineTest {
         GameState initialState = gameEngine.initialize(gameParams);
         
         // Check that player-1 base is at (1, 1)
-        Unit player1Base = findUnitById(initialState, "base-player-1");
+        Unit player1Base = findUnitById(initialState, 1);
+        assertNotNull(player1Base);
         assertEquals(1, player1Base.position().x());
         assertEquals(1, player1Base.position().y());
         
         // Check that player-2 base is at (8, 8)
-        Unit player2Base = findUnitById(initialState, "base-player-2");
+        Unit player2Base = findUnitById(initialState, 3);
+        assertNotNull(player2Base);
         assertEquals(8, player2Base.position().x());
         assertEquals(8, player2Base.position().y());
     }
@@ -174,7 +176,7 @@ class GameEngineTest {
         
         GameState state = gameEngine.getGameState();
         assertNotNull(state, "Game state should not be null");
-        assertFalse(state.units().length == 0, "Should have units");
+        assertNotEquals(0, state.units().length, "Should have units");
     }
 
     @Test
@@ -201,7 +203,7 @@ class GameEngineTest {
     @Test
     void testHandlePlayerActionsBeforeInitialize() {
         gameEngine.addPlayer("player-1");
-        Action[] actions = {new Action("unit-1", Direction.N)};
+        Action[] actions = {new Action(1, Direction.N)};
         
         boolean result = gameEngine.handlePlayerActions("player-1", actions);
         assertFalse(result, "Should return false before initialization");
@@ -213,7 +215,7 @@ class GameEngineTest {
         gameEngine.addPlayer("player-2");
         gameEngine.initialize(gameParams);
         
-        Action[] actions = {new Action("base-player-1", Direction.N)};
+        Action[] actions = {new Action(1, Direction.N)};
         boolean result = gameEngine.handlePlayerActions("player-3", actions);
         
         assertFalse(result, "Should return false for inactive player");
@@ -226,7 +228,7 @@ class GameEngineTest {
         gameEngine.initialize(gameParams);
         
         GameState initialState = gameEngine.getGameState();
-        Unit player1Pawn = findUnitById(initialState, "pawn-player-1-0");
+        Unit player1Pawn = findUnitById(initialState, 1);
         
         if (player1Pawn != null) {
             Action[] actions = {new Action(player1Pawn.id(), Direction.E)};
@@ -244,7 +246,7 @@ class GameEngineTest {
         gameEngine.initialize(gameParams);
         
         // Try to move a non-existent unit
-        Action[] actions = {new Action("non-existent", Direction.N)};
+        Action[] actions = {new Action(0, Direction.N)};
         boolean result = gameEngine.handlePlayerActions("player-1", actions);
         
         assertFalse(result, "Should return false for invalid actions");
@@ -258,7 +260,7 @@ class GameEngineTest {
         gameEngine.initialize(gameParams);
         
         GameState initialState = gameEngine.getGameState();
-        Unit player1Pawn = findUnitById(initialState, "pawn-player-1-0");
+        Unit player1Pawn = findUnitById(initialState, 1);
         
         if (player1Pawn != null) {
             Action[] actions = {new Action(player1Pawn.id(), Direction.E)};
@@ -333,9 +335,9 @@ class GameEngineTest {
 
     // ===== HELPER METHODS =====
 
-    private Unit findUnitById(GameState gameState, String unitId) {
+    private Unit findUnitById(GameState gameState, int unitId) {
         for (Unit unit : gameState.units()) {
-            if (unitId.equals(unit.id())) {
+            if (unitId == unit.id()) {
                 return unit;
             }
         }

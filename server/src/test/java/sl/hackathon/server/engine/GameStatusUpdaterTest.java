@@ -11,17 +11,17 @@ class GameStatusUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        updater = new GameStatusUpdaterImpl();
+        updater = new GameStatusUpdaterImpl(new UnitIdGenerator());
     }
 
     // ===== BASIC MOVEMENT TESTS =====
 
     @Test
     void testSimpleMovement() {
-        Unit unit = new Unit("unit-1", "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
-        Action action = new Action("unit-1", Direction.N);
+        Action action = new Action(1, Direction.N);
         GameState newState = updater.update(gameState, "player-1", new Action[]{action});
 
         assertEquals(1, newState.units().length, "Should have 1 unit");
@@ -31,19 +31,19 @@ class GameStatusUpdaterTest {
 
     @Test
     void testMultipleUnitsMovement() {
-        Unit unit1 = new Unit("unit-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit unit2 = new Unit("unit-2", "player-1", UnitType.PAWN, new Position(10, 10));
+        Unit unit1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit2 = new Unit(2, "player-1", UnitType.PAWN, new Position(10, 10));
         GameState gameState = new GameState(new Unit[]{unit1, unit2}, System.currentTimeMillis());
 
         Action[] actions = {
-            new Action("unit-1", Direction.E),
-            new Action("unit-2", Direction.S)
+            new Action(1, Direction.E),
+            new Action(2, Direction.S)
         };
         GameState newState = updater.update(gameState, "player-1", actions);
 
         assertEquals(2, newState.units().length, "Should have 2 units");
-        Unit u1 = findUnitById(newState, "unit-1");
-        Unit u2 = findUnitById(newState, "unit-2");
+        Unit u1 = findUnitById(newState, 1);
+        Unit u2 = findUnitById(newState, 2);
 
         assertNotNull(u1);
         assertEquals(6, u1.position().x(), "Unit-1 X should be 6 (moved east)");
@@ -74,10 +74,10 @@ class GameStatusUpdaterTest {
         };
 
         for (int i = 0; i < directions.length; i++) {
-            Unit unit = new Unit("unit-1", "player-1", UnitType.PAWN, startPos);
+            Unit unit = new Unit(1, "player-1", UnitType.PAWN, startPos);
             GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
-            Action action = new Action("unit-1", directions[i]);
+            Action action = new Action(1, directions[i]);
             GameState newState = updater.update(gameState, "player-1", new Action[]{action});
 
             Unit moved = newState.units()[0];
@@ -92,7 +92,7 @@ class GameStatusUpdaterTest {
 
     @Test
     void testNoActions() {
-        Unit unit = new Unit("unit-1", "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
         GameState newState = updater.update(gameState, "player-1", new Action[]{});
@@ -104,7 +104,7 @@ class GameStatusUpdaterTest {
 
     @Test
     void testNullActions() {
-        Unit unit = new Unit("unit-1", "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
         GameState newState = updater.update(gameState, "player-1", null);
@@ -116,10 +116,10 @@ class GameStatusUpdaterTest {
 
     @Test
     void testActionForNonExistentUnit() {
-        Unit unit = new Unit("unit-1", "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
-        Action action = new Action("non-existent", Direction.N);
+        Action action = new Action(999, Direction.N);
         GameState newState = updater.update(gameState,"player-1",  new Action[]{action});
 
         assertEquals(1, newState.units().length, "Should still have 1 unit");
@@ -133,13 +133,13 @@ class GameStatusUpdaterTest {
     @Test
     void testEnemyPawnsCollide() {
         // Two enemy pawns move to the same position
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-2", UnitType.PAWN, new Position(7, 5));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-2", UnitType.PAWN, new Position(7, 5));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2}, System.currentTimeMillis());
 
         Action[] actions = {
-            new Action("pawn-1", Direction.E), // move to (6, 5)
-            new Action("pawn-2", Direction.W)  // move to (6, 5)
+            new Action(1, Direction.E), // move to (6, 5)
+            new Action(2, Direction.W)  // move to (6, 5)
         };
 
         GameState newState = updater.update(gameState,"player-1",  actions);
@@ -149,13 +149,13 @@ class GameStatusUpdaterTest {
     @Test
     void testEnemyPawnsCollideOnOneSquare() {
         // Both pawns move to same square from different directions
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-2", UnitType.PAWN, new Position(5, 7));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-2", UnitType.PAWN, new Position(5, 7));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2}, System.currentTimeMillis());
 
         Action[] actions = {
-            new Action("pawn-1", Direction.S), // move to (5, 6)
-            new Action("pawn-2", Direction.N)  // move to (5, 6)
+            new Action(1, Direction.S), // move to (5, 6)
+            new Action(2, Direction.N)  // move to (5, 6)
         };
 
         GameState newState = updater.update(gameState,"player-1",  actions);
@@ -167,13 +167,13 @@ class GameStatusUpdaterTest {
     @Test
     void testFriendlyPawnsCollide() {
         // Two friendly pawns move to the same position
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-1", UnitType.PAWN, new Position(7, 5));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-1", UnitType.PAWN, new Position(7, 5));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2}, System.currentTimeMillis());
 
         Action[] actions = {
-            new Action("pawn-1", Direction.E), // move to (6, 5)
-            new Action("pawn-2", Direction.W)  // move to (6, 5)
+            new Action(1, Direction.E), // move to (6, 5)
+            new Action(2, Direction.W)  // move to (6, 5)
         };
 
         GameState newState = updater.update(gameState,"player-1",  actions);
@@ -187,15 +187,15 @@ class GameStatusUpdaterTest {
     @Test
     void testMultipleFriendlyPawnsCollide() {
         // Three friendly pawns converge on same position
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-1", UnitType.PAWN, new Position(7, 5));
-        Unit pawn3 = new Unit("pawn-3", "player-1", UnitType.PAWN, new Position(6, 4));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-1", UnitType.PAWN, new Position(7, 5));
+        Unit pawn3 = new Unit(3, "player-1", UnitType.PAWN, new Position(6, 4));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2, pawn3}, System.currentTimeMillis());
 
         Action[] actions = {
-            new Action("pawn-1", Direction.E), // move to (6, 5)
-            new Action("pawn-2", Direction.W), // move to (6, 5)
-            new Action("pawn-3", Direction.S)  // move to (6, 5)
+            new Action(1, Direction.E), // move to (6, 5)
+            new Action(2, Direction.W), // move to (6, 5)
+            new Action(3, Direction.S)  // move to (6, 5)
         };
 
         GameState newState = updater.update(gameState,"player-1",  actions);
@@ -210,32 +210,32 @@ class GameStatusUpdaterTest {
 
     @Test
     void testPawnEatsFood() {
-        Unit pawn = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit base1 = new Unit("base-1", "player-1", UnitType.BASE, new Position(1, 1));
-        Unit food = new Unit("food-1", "none", UnitType.FOOD, new Position(6, 5));
+        Unit pawn = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit base1 = new Unit(2, "player-1", UnitType.BASE, new Position(1, 1));
+        Unit food = new Unit(3, "none", UnitType.FOOD, new Position(6, 5));
         GameState gameState = new GameState(new Unit[]{pawn, food, base1}, System.currentTimeMillis());
 
-        Action action = new Action("pawn-1", Direction.E);
+        Action action = new Action(1, Direction.E);
         GameState newState = updater.update(gameState,"player-1",  new Action[]{action});
 
         assertEquals(3, newState.units().length, "Pawn should remain, food should be consumed");
-        assertEquals("pawn-1", newState.units()[0].id(), "Pawn should survive");
+        assertEquals(1, newState.units()[0].id(), "Pawn should survive");
         assertEquals(6, newState.units()[0].position().x(), "Pawn should be at food position");
         assertEquals(5, newState.units()[0].position().y(), "Pawn should be at food position");
     }
 
     @Test
     void testMultiplePawnsEatFood() {
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-2", UnitType.PAWN, new Position(5, 7));
-        Unit base1 = new Unit("base-1", "player-1", UnitType.BASE, new Position(1, 1));
-        Unit base2 = new Unit("base-2", "player-2", UnitType.BASE, new Position(2, 2));
-        Unit food = new Unit("food-1", "none", UnitType.FOOD, new Position(5, 6));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-2", UnitType.PAWN, new Position(5, 7));
+        Unit base1 = new Unit(3, "player-1", UnitType.BASE, new Position(1, 1));
+        Unit base2 = new Unit(4, "player-2", UnitType.BASE, new Position(2, 2));
+        Unit food = new Unit(5, "none", UnitType.FOOD, new Position(5, 6));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2, food, base1,base2}, System.currentTimeMillis());
 
         Action[] actions = {
-            new Action("pawn-1", Direction.S), // move to (5, 6)
-            new Action("pawn-2", Direction.N)  // move to (5, 6)
+            new Action(1, Direction.S), // move to (5, 6)
+            new Action(2, Direction.N)  // move to (5, 6)
         };
 
         GameState newState = updater.update(gameState,"player-1",  actions);
@@ -248,11 +248,11 @@ class GameStatusUpdaterTest {
 
     @Test
     void testPawnDestroysEnemyBase() {
-        Unit pawn = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit base = new Unit("base-1", "player-2", UnitType.BASE, new Position(6, 5));
+        Unit pawn = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit base = new Unit(2, "player-2", UnitType.BASE, new Position(6, 5));
         GameState gameState = new GameState(new Unit[]{pawn, base}, System.currentTimeMillis());
 
-        Action action = new Action("pawn-1", Direction.E);
+        Action action = new Action(1, Direction.E);
         GameState newState = updater.update(gameState,"player-1",  new Action[]{action});
 
         assertEquals(0, newState.units().length, "Both pawn and base should be destroyed");
@@ -260,14 +260,14 @@ class GameStatusUpdaterTest {
 
     @Test
     void testMultiplePawnsDestroySingleBase() {
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-1", UnitType.PAWN, new Position(5, 7));
-        Unit base = new Unit("base-1", "player-2", UnitType.BASE, new Position(5, 6));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-1", UnitType.PAWN, new Position(5, 7));
+        Unit base = new Unit(3, "player-2", UnitType.BASE, new Position(5, 6));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2, base}, System.currentTimeMillis());
 
         Action[] actions = {
-            new Action("pawn-1", Direction.S), // move to (5, 6)
-            new Action("pawn-2", Direction.N)  // move to (5, 6)
+            new Action(1, Direction.S), // move to (5, 6)
+            new Action(2, Direction.N)  // move to (5, 6)
         };
 
         GameState newState = updater.update(gameState,"player-1",  actions);
@@ -278,8 +278,8 @@ class GameStatusUpdaterTest {
 
     @Test
     void testGameNotEndedWithBothPlayers() {
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-2", UnitType.PAWN, new Position(10, 10));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-2", UnitType.PAWN, new Position(10, 10));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2}, System.currentTimeMillis());
 
         assertFalse(updater.hasGameEnded(gameState), "Game should not end with both players having units");
@@ -287,7 +287,7 @@ class GameStatusUpdaterTest {
 
     @Test
     void testGameEndedWithOnePlayer() {
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{pawn1}, System.currentTimeMillis());
 
         assertTrue(updater.hasGameEnded(gameState), "Game should end with only one player");
@@ -304,8 +304,8 @@ class GameStatusUpdaterTest {
 
     @Test
     void testGetWinnerWhenGameEnded() {
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit base1 = new Unit("base-1", "player-1", UnitType.BASE, new Position(0, 0));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit base1 = new Unit(2, "player-1", UnitType.BASE, new Position(0, 0));
         GameState gameState = new GameState(new Unit[]{pawn1, base1}, System.currentTimeMillis());
 
         String winner = updater.getWinnerId(gameState);
@@ -314,8 +314,8 @@ class GameStatusUpdaterTest {
 
     @Test
     void testGetWinnerWhenGameNotEnded() {
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-2", UnitType.PAWN, new Position(10, 10));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-2", UnitType.PAWN, new Position(10, 10));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2}, System.currentTimeMillis());
 
         String winner = updater.getWinnerId(gameState);
@@ -335,20 +335,20 @@ class GameStatusUpdaterTest {
     @Test
     void testComplexCollisionScenario() {
         // Player 1: pawn1, Player 2: pawn2, pawn3, Food: food1
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-2", UnitType.PAWN, new Position(7, 5));
-        Unit pawn3 = new Unit("pawn-3", "player-2", UnitType.PAWN, new Position(6, 4));
-        Unit base1 = new Unit("base-1", "player-1", UnitType.BASE, new Position(1, 1));
-        Unit base2 = new Unit("base-2", "player-2", UnitType.BASE, new Position(2, 2));
-        Unit base3 = new Unit("base-3", "player-3", UnitType.BASE, new Position(3, 3));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-2", UnitType.PAWN, new Position(7, 5));
+        Unit pawn3 = new Unit(3, "player-2", UnitType.PAWN, new Position(6, 4));
+        Unit base1 = new Unit(4, "player-1", UnitType.BASE, new Position(1, 1));
+        Unit base2 = new Unit(5, "player-2", UnitType.BASE, new Position(2, 2));
+        Unit base3 = new Unit(6, "player-3", UnitType.BASE, new Position(3, 3));
 
-        Unit food = new Unit("food-1", "none", UnitType.FOOD, new Position(6, 5));
+        Unit food = new Unit(7, "none", UnitType.FOOD, new Position(6, 5));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2, pawn3, food,base1,base2,base3}, System.currentTimeMillis());
 
         Action[] actions = {
-            new Action("pawn-1", Direction.E), // move to (6, 5)
-            new Action("pawn-2", Direction.W), // move to (6, 5)
-            new Action("pawn-3", Direction.S)  // move to (6, 5)
+            new Action(1, Direction.E), // move to (6, 5)
+            new Action(2, Direction.W), // move to (6, 5)
+            new Action(3, Direction.S)  // move to (6, 5)
         };
 
         GameState newState = updater.update(gameState,"player-1",  actions);
@@ -359,17 +359,17 @@ class GameStatusUpdaterTest {
     @Test
     void testUnitPreservation() {
         // Multiple units, only some move
-        Unit pawn1 = new Unit("pawn-1", "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit("pawn-2", "player-1", UnitType.PAWN, new Position(10, 10));
+        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(2, "player-1", UnitType.PAWN, new Position(10, 10));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2}, System.currentTimeMillis());
 
-        Action action = new Action("pawn-1", Direction.N);
+        Action action = new Action(1, Direction.N);
         GameState newState = updater.update(gameState,"player-1",  new Action[]{action});
 
         assertEquals(2, newState.units().length, "Both units should remain");
 
-        Unit u1 = findUnitById(newState, "pawn-1");
-        Unit u2 = findUnitById(newState, "pawn-2");
+        Unit u1 = findUnitById(newState, 1);
+        Unit u2 = findUnitById(newState, 2);
 
         assertNotNull(u1);
         assertEquals(5, u1.position().x(), "Pawn-1 X should be 5");
@@ -381,9 +381,9 @@ class GameStatusUpdaterTest {
 
     // ===== HELPER METHODS =====
 
-    private Unit findUnitById(GameState gameState, String unitId) {
+    private Unit findUnitById(GameState gameState, int unitId) {
         for (Unit unit : gameState.units()) {
-            if (unitId.equals(unit.id())) {
+            if (unitId == unit.id()) {
                 return unit;
             }
         }

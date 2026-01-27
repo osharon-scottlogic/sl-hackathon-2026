@@ -86,7 +86,7 @@ class GameSessionTest {
         when(mockRegistry.isReady()).thenReturn(false, false, true);
         
         Unit[] units = new Unit[]{
-            new Unit("unit1", PLAYER_1, UnitType.PAWN, new Position(1, 1))
+            new Unit(1, PLAYER_1, UnitType.PAWN, new Position(1, 1))
         };
         GameState initialState = new GameState(units, System.currentTimeMillis());
         when(mockEngine.initialize(gameParams)).thenReturn(initialState);
@@ -116,7 +116,7 @@ class GameSessionTest {
         when(mockRegistry.isReady()).thenReturn(true);
         
         Unit[] units = new Unit[]{
-            new Unit("unit1", PLAYER_1, UnitType.PAWN, new Position(1, 1))
+            new Unit(1, PLAYER_1, UnitType.PAWN, new Position(1, 1))
         };
         GameState state = new GameState(units, System.currentTimeMillis());
         when(mockEngine.initialize(any())).thenReturn(state);
@@ -157,7 +157,7 @@ class GameSessionTest {
         when(mockRegistry.isReady()).thenReturn(true);
         
         Unit[] units = new Unit[]{
-            new Unit("unit1", PLAYER_1, UnitType.PAWN, new Position(1, 1))
+            new Unit(1, PLAYER_1, UnitType.PAWN, new Position(1, 1))
         };
         GameState state = new GameState(units, System.currentTimeMillis());
         when(mockEngine.initialize(gameParams)).thenReturn(state);
@@ -178,7 +178,7 @@ class GameSessionTest {
         Thread.sleep(200);
         
         // Submit actions for both players
-        Action[] player1Actions = new Action[]{new Action("unit1", Direction.N)};
+        Action[] player1Actions = new Action[]{new Action(1, Direction.N)};
         Action[] player2Actions = new Action[]{};
         
         gameSession.submitAction(PLAYER_1, 0, player1Actions);
@@ -195,7 +195,7 @@ class GameSessionTest {
     void submitAction_WithMismatchedTurnId_IgnoresAction() {
         // Arrange
         gameSession = new GameSession(mockEngine, mockRegistry, gameParams);
-        Action[] actions = new Action[]{new Action("unit1", Direction.N)};
+        Action[] actions = new Action[]{new Action(1, Direction.N)};
         
         // Act - submit for turn 5 when current turn is 0
         gameSession.submitAction(PLAYER_1, 5, actions);
@@ -211,7 +211,7 @@ class GameSessionTest {
         when(mockRegistry.isReady()).thenReturn(true);
         
         Unit[] units = new Unit[]{
-            new Unit("unit1", PLAYER_1, UnitType.PAWN, new Position(1, 1))
+            new Unit(1, PLAYER_1, UnitType.PAWN, new Position(1, 1))
         };
         GameState state = new GameState(units, System.currentTimeMillis());
         
@@ -236,7 +236,7 @@ class GameSessionTest {
         Thread.sleep(200);
         
         // Only player 1 submits (player 2 times out)
-        Action[] player1Actions = new Action[]{new Action("unit1", Direction.N)};
+        Action[] player1Actions = new Action[]{new Action(1, Direction.N)};
         gameSession.submitAction(PLAYER_1, 0, player1Actions);
         // Player 2 doesn't submit - timeout expected
         
@@ -255,7 +255,7 @@ class GameSessionTest {
         when(mockRegistry.isReady()).thenReturn(true);
         
         Unit[] units = new Unit[]{
-            new Unit("unit1", PLAYER_1, UnitType.PAWN, new Position(1, 1))
+            new Unit(1, PLAYER_1, UnitType.PAWN, new Position(1, 1))
         };
         GameState state = new GameState(units, System.currentTimeMillis());
         when(mockEngine.initialize(gameParams)).thenReturn(state);
@@ -291,7 +291,7 @@ class GameSessionTest {
         when(mockRegistry.isReady()).thenReturn(true);
         
         Unit[] units = new Unit[]{
-            new Unit("unit1", PLAYER_1, UnitType.PAWN, new Position(1, 1))
+            new Unit(1, PLAYER_1, UnitType.PAWN, new Position(1, 1))
         };
         GameState state = new GameState(units, System.currentTimeMillis());
         when(mockEngine.initialize(gameParams)).thenReturn(state);
