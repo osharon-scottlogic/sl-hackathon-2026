@@ -53,7 +53,7 @@ public class GameServer {
         this.config = config;
         this.gameEngine = gameEngine;
         this.clientRegistry = new ClientRegistry();
-        this.webSocketServer = new WebSocketServerContainer(config.port());
+        this.webSocketServer = new WebSocketServerContainer("0.0.0.0", config.port(), "/");
         
         wireHandlers();
     }
