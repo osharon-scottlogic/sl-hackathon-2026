@@ -16,7 +16,7 @@ import java.util.List;
 
 public class MapFactory {
     private static final Logger logger = LoggerFactory.getLogger(MapFactory.class);
-
+    private static final String MAPS_FOLDER ="maps/";
     /**
      * Read map details from file and creates a map configuration.
      *
@@ -26,7 +26,7 @@ public class MapFactory {
     public static MapConfig createMapConfig(String filename) {
         ObjectMapper mapper = new ObjectMapper();
 
-        try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream(filename)) {
+        try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream(MAPS_FOLDER + filename)) {
             if (inputStream == null) {
                 throw new IllegalArgumentException("Map file not found: " + filename);
             }
