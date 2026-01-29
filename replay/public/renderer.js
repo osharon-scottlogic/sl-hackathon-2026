@@ -106,8 +106,9 @@ function renderTurn(turnIndex) {
     // Redraw walls
     renderWalls();
     
-    // Render units
-    turn.units.forEach(unit => {
+    // Render units (expected to be full state per turn; app.js expands deltas)
+    const units = Array.isArray(turn.units) ? turn.units : [];
+    units.forEach(unit => {
         renderUnit(unit);
     });
 }

@@ -44,7 +44,7 @@ class GameServerTest {
         
         // Setup default mock behaviors
         when(mockEngine.getActivePlayers()).thenReturn(java.util.List.of());
-        when(mockEngine.getGameStateHistory()).thenReturn(java.util.List.of());
+        when(mockEngine.getGameDeltaHistory()).thenReturn(java.util.List.of());
         when(mockEngine.getWinnerId()).thenReturn(null);
         
         // Create valid configuration with random port

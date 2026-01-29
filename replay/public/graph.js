@@ -34,8 +34,9 @@ function calculateGraphData(game) {
             player2: 0,
             food: 0
         };
-        
-        turn.units.forEach(unit => {
+
+        const units = Array.isArray(turn.units) ? turn.units : [];
+        units.forEach(unit => {
             if (unit.type === 'FOOD') {
                 counts.food++;
             } else if (unit.owner === 'player-1') {

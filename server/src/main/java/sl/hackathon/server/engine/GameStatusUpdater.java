@@ -17,6 +17,15 @@ public interface GameStatusUpdater {
     GameState update(GameState gameState, String playerId, Action[] actions);
 
     /**
+     * Generates a delta representing changes from previous state to new state.
+     *
+     * @param previousState the previous game state
+     * @param newState the new game state
+     * @return the delta representing changes
+     */
+    GameDelta generateDelta(GameState previousState, GameState newState);
+
+    /**
      * Checks if the game has ended based on the current game state.
      *
      * @param gameState the current game state

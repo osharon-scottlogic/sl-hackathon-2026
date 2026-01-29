@@ -229,59 +229,6 @@ public class DTOSerializationTest {
         assertEquals(0, deserialized.units().length);
     }
 
-    // ==================== GameStatusUpdate Tests ====================
-
-    @Test
-    @DisplayName("Should serialize GameStatusUpdate record to JSON")
-    public void testSerializeGameStatusUpdate() throws Exception {
-        // Arrange
-        GameState[] history = {
-            new GameState(new Unit[0], 1000L),
-            new GameState(new Unit[0], 2000L)
-        };
-        MapLayout mapLayout = new MapLayout(new Dimension(8, 8),new Position[]{});
-        GameStatusUpdate update = new GameStatusUpdate(GameStatus.PLAYING, mapLayout, history, "player-1");
-
-        // Act
-        String json = objectMapper.writeValueAsString(update);
-
-        // Assert
-        assertNotNull(json);
-        assertTrue(json.contains("\"status\":\"PLAYING\""));
-        assertTrue(json.contains("\"winnerId\":\"player-1\""));
-        assertTrue(json.contains("\"history\""));
-    }
-
-    @Test
-    @DisplayName("Should deserialize JSON to GameStatusUpdate record")
-    public void testDeserializeGameStatusUpdate() throws Exception {
-        // Arrange
-        String json = "{\"status\":\"END\",\"map\":{\"dimension\":{\"width\":8,\"height\":8}},\"history\":[],\"winnerId\":\"player-2\"}";
-
-        // Act
-        GameStatusUpdate update = objectMapper.readValue(json, GameStatusUpdate.class);
-
-        // Assert
-        assertNotNull(update);
-        assertEquals(GameStatus.END, update.status());
-        assertEquals("player-2", update.winnerId());
-        assertEquals(0, update.history().length);
-    }
-
-    @Test
-    @DisplayName("Should round-trip GameStatusUpdate with all game statuses")
-    public void testRoundTripGameStatusUpdateAllStatuses() throws Exception {
-        GameStatus[] statuses = {GameStatus.IDLE, GameStatus.START, GameStatus.PLAYING, GameStatus.END};
-
-        for (GameStatus status : statuses) {
-            MapLayout mapLayout = new MapLayout(new Dimension(8, 8), new Position[]{});
-            GameStatusUpdate update = new GameStatusUpdate(status, mapLayout, new GameState[0], "player-test");
-            String json = objectMapper.writeValueAsString(update);
-            GameStatusUpdate deserialized = objectMapper.readValue(json, GameStatusUpdate.class);
-            assertEquals(status, deserialized.status());
-        }
-    }
-
     // ==================== Dimension Tests ====================
 
     @Test
@@ -357,34 +304,17 @@ public class DTOSerializationTest {
             new Unit(3, "player-2", UnitType.BASE, new Position(6, 6))
         };
         GameState gameState = new GameState(units, System.currentTimeMillis());
-        GameState[] history = {gameState};
         MapLayout mapLayout = new MapLayout(new Dimension(8, 8), new Position[]{});
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(GameStatus.PLAYING, mapLayout, history, null);
+        GameStart start = new GameStart(mapLayout, units, System.currentTimeMillis());
 
         // Act
-        String json = objectMapper.writeValueAsString(statusUpdate);
-        GameStatusUpdate deserialized = objectMapper.readValue(json, GameStatusUpdate.class);
+        String json = objectMapper.writeValueAsString(start);
+        GameStart deserialized = objectMapper.readValue(json, GameStart.class);
 
         // Assert
-        assertEquals(GameStatus.PLAYING, deserialized.status());
         assertEquals(8, deserialized.map().dimension().width());
-        assertEquals(3, deserialized.history()[0].units().length);
-        assertEquals(1, deserialized.history()[0].units()[0].id());
-    }
-
-    @Test
-    @DisplayName("Should preserve null values in nullable fields")
-    public void testNullValuePreservation() throws Exception {
-        // Arrange
-        MapLayout mapLayout = new MapLayout(new Dimension(8, 8), new Position[]{});
-        GameStatusUpdate update = new GameStatusUpdate(GameStatus.IDLE, mapLayout, new GameState[0], null);
-
-        // Act
-        String json = objectMapper.writeValueAsString(update);
-        GameStatusUpdate deserialized = objectMapper.readValue(json, GameStatusUpdate.class);
-
-        // Assert
-        assertNull(deserialized.winnerId());
+        assertEquals(3, deserialized.initialUnits().length);
+        assertEquals(1, deserialized.initialUnits()[0].id());
     }
 
     // ==================== Enum Tests ====================
@@ -409,13 +339,120 @@ public class DTOSerializationTest {
         }
     }
 
+    // ==================== GameDelta Tests ====================
+
     @Test
-    @DisplayName("Should serialize and deserialize all GameStatus enum values")
-    public void testAllGameStatusValues() throws Exception {
-        for (GameStatus status : GameStatus.values()) {
-            String json = objectMapper.writeValueAsString(status);
-            GameStatus deserialized = objectMapper.readValue(json, GameStatus.class);
-            assertEquals(status, deserialized);
-        }
+    @DisplayName("Should serialize GameDelta record to JSON")
+    public void testSerializeGameDelta() throws Exception {
+        // Arrange
+        Unit[] addedOrModified = {
+            new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5))
+        };
+        int[] removed = {2,3};
+        GameDelta delta = new GameDelta(addedOrModified, removed,  1000L);
+
+        // Act
+        String json = objectMapper.writeValueAsString(delta);
+
+        // Assert
+        assertNotNull(json);
+        assertTrue(json.contains("\"addedOrModified\""));
+        assertTrue(json.contains("\"removed\""));
+    }
+
+    @Test
+    @DisplayName("Should deserialize JSON to GameDelta record")
+    public void testDeserializeGameDelta() throws Exception {
+        // Arrange
+        String json = "{\"addedOrModified\":[],\"removed\":[1],\"timestamp\":2000}";
+
+        // Act
+        GameDelta delta = objectMapper.readValue(json, GameDelta.class);
+
+        // Assert
+        assertNotNull(delta);
+        assertEquals(0, delta.addedOrModified().length);
+        assertEquals(1, delta.removed().length);
+        assertEquals(1, delta.removed()[0]);
+    }
+
+    // ==================== GameStart Tests ====================
+
+    @Test
+    @DisplayName("Should serialize GameStart record to JSON")
+    public void testSerializeGameStart() throws Exception {
+        // Arrange
+        MapLayout map = new MapLayout(new Dimension(10, 10), new Position[]{new Position(5, 5)});
+        Unit[] initialUnits = {
+            new Unit(1, "player-1", UnitType.BASE, new Position(1, 1)),
+            new Unit(2, "player-2", UnitType.BASE, new Position(8, 8))
+        };
+        GameStart gameStart = new GameStart(map, initialUnits, 1000L);
+
+        // Act
+        String json = objectMapper.writeValueAsString(gameStart);
+
+        // Assert
+        assertNotNull(json);
+        assertTrue(json.contains("\"map\""));
+        assertTrue(json.contains("\"initialUnits\""));
+        assertTrue(json.contains("\"timestamp\":1000"));
+    }
+
+    @Test
+    @DisplayName("Should deserialize JSON to GameStart record")
+    public void testDeserializeGameStart() throws Exception {
+        // Arrange
+        String json = "{\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"initialUnits\":[],\"timestamp\":1000}";
+
+        // Act
+        GameStart gameStart = objectMapper.readValue(json, GameStart.class);
+
+        // Assert
+        assertNotNull(gameStart);
+        assertNotNull(gameStart.map());
+        assertEquals(10, gameStart.map().dimension().width());
+        assertEquals(0, gameStart.initialUnits().length);
+        assertEquals(1000L, gameStart.timestamp());
+    }
+
+    // ==================== GameEnd Tests ====================
+
+    @Test
+    @DisplayName("Should serialize GameEnd record to JSON")
+    public void testSerializeGameEnd() throws Exception {
+        // Arrange
+        MapLayout map = new MapLayout(new Dimension(10, 10), new Position[]{});
+        GameDelta[] deltas = {
+            new GameDelta(new Unit[0], new int[0], 1000L)
+        };
+        GameEnd gameEnd = new GameEnd(map, deltas, "player-1", 2000L);
+
+        // Act
+        String json = objectMapper.writeValueAsString(gameEnd);
+
+        // Assert
+        assertNotNull(json);
+        assertTrue(json.contains("\"map\""));
+        assertTrue(json.contains("\"deltas\""));
+        assertTrue(json.contains("\"winnerId\":\"player-1\""));
+        assertTrue(json.contains("\"timestamp\":2000"));
+    }
+
+    @Test
+    @DisplayName("Should deserialize JSON to GameEnd record")
+    public void testDeserializeGameEnd() throws Exception {
+        // Arrange
+        String json = "{\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"deltas\":[],\"winnerId\":\"player-2\",\"timestamp\":3000}";
+
+        // Act
+        GameEnd gameEnd = objectMapper.readValue(json, GameEnd.class);
+
+        // Assert
+        assertNotNull(gameEnd);
+        assertNotNull(gameEnd.map());
+        assertEquals(0, gameEnd.deltas().length);
+        assertEquals("player-2", gameEnd.winnerId());
+        assertEquals(3000L, gameEnd.timestamp());
     }
 }

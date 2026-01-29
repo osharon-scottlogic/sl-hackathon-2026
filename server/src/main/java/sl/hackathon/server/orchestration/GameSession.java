@@ -172,14 +172,13 @@ public class GameSession implements Runnable {
         gameStarted = true;
         
         // Broadcast StartGameMessage to all clients
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
+        GameStart gameStart = new GameStart(
             new MapLayout(gameParams.mapConfig().dimension(), gameParams.mapConfig().walls()),
-            new GameState[]{initialState},
-            null
+            initialState.units(),
+            System.currentTimeMillis()
         );
         
-        StartGameMessage startMessage = new StartGameMessage(statusUpdate);
+        StartGameMessage startMessage = new StartGameMessage(gameStart);
         clientRegistry.broadcast(startMessage);
         
         logger.info("Game initialized and start message broadcast");
@@ -191,15 +190,14 @@ public class GameSession implements Runnable {
      * @throws InterruptedException if interrupted during turn processing
      */
     private void runGameLoop() throws InterruptedException {
-        logger.info("Starting game loop with "+Ansi.YELLOW+"{}"+ Ansi.RESET+" units", gameEngine.getGameState().units().length);
+        logger.info("\nStarting game loop with "+Ansi.YELLOW+"{}"+ Ansi.RESET+" units", gameEngine.getGameState().units().length);
 
-        while (!gameEngine.isGameEnded() && !shutdown && currentTurnId < 5000) {
+        while (!gameEngine.isGameEnded() && !shutdown) {
             processTurn();
             currentTurnId++;
-            logger.debug("turn "+Ansi.GREEN+"{}"+ Ansi.RESET+" ended with "+Ansi.YELLOW+"{}"+ Ansi.RESET+" units", currentTurnId, gameEngine.getGameState().units().length);
         }
         
-        logger.info("Game loop ended. Game ended: {}, Shutdown: {}", gameEngine.isGameEnded(), shutdown);
+        logger.info("\nGame loop ended. Game ended: {}, Shutdown: {}", gameEngine.isGameEnded(), shutdown);
     }
     
     /**
@@ -258,19 +256,21 @@ public class GameSession implements Runnable {
     /**
      * Broadcasts the EndGameMessage with final game status and winner.
      */
-    private void broadcastEndGame() {
+    private void broadcastEndGame() throws JsonProcessingException {
         logger.info("Broadcasting end game message");
-        
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.END,
+
+        logger.info(Ansi.MAGENTA+gameEngine.getGameDeltaHistory().size()+Ansi.RESET);
+
+        GameEnd gameEnd = new GameEnd(
             new MapLayout(gameParams.mapConfig().dimension(), gameParams.mapConfig().walls()),
-            gameEngine.getGameStateHistory().toArray(new GameState[0]),
-            gameEngine.getWinnerId()
+            gameEngine.getGameDeltaHistory().toArray(new GameDelta[0]),
+            gameEngine.getWinnerId(),
+            System.currentTimeMillis()
         );
         
-        EndGameMessage endMessage = new EndGameMessage(statusUpdate);
+        EndGameMessage endMessage = new EndGameMessage(gameEnd);
         clientRegistry.broadcast(endMessage);
         
-        logger.info("End game message broadcast. Winner: " + Ansi.YELLOW + "{}" + Ansi.RESET + " after " + Ansi.YELLOW + "{}" + Ansi.RESET + " turns", gameEngine.getWinnerId(), gameEngine.getGameStateHistory().size());
+        logger.info("End game message broadcast. Winner: " + Ansi.YELLOW + "{}" + Ansi.RESET + " after " + Ansi.YELLOW + "{}" + Ansi.RESET + " turns", gameEngine.getWinnerId(), gameEngine.getGameDeltaHistory().size());
     }
 }

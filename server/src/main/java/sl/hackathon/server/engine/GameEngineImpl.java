@@ -1,8 +1,12 @@
 package sl.hackathon.server.engine;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.*;
+import sl.hackathon.server.util.Ansi;
 import sl.hackathon.server.validators.ActionValidator;
 import sl.hackathon.server.validators.ActionValidatorImpl;
 
@@ -14,8 +18,9 @@ import java.util.*;
 public class GameEngineImpl implements GameEngine {
     private static final Logger logger = LoggerFactory.getLogger(GameEngineImpl.class);
     private final List<String> activePlayers;
-    private GameState currentGameState;
-    private final List<GameState> gameStateHistory;
+    private GameState previousGameState = null;
+    private GameState currentGameState = null;
+    private final List<GameDelta> gameDeltaHistory;
     private GameParams gameParams;
     private boolean initialized;
     private int currentTurn;
@@ -25,7 +30,7 @@ public class GameEngineImpl implements GameEngine {
 
     public GameEngineImpl() {
         this.activePlayers = new ArrayList<>();
-        this.gameStateHistory = new ArrayList<>();
+        this.gameDeltaHistory = new ArrayList<>();
         this.initialized = false;
         this.currentTurn = 0;
         this.actionValidator = new ActionValidatorImpl();
@@ -68,17 +73,17 @@ public class GameEngineImpl implements GameEngine {
         }
 
         this.gameParams = gameParams;
-        this.initialized = true;
-        this.currentTurn = 0;
-        this.gameStateHistory.clear();
+        initialized = true;
+        currentTurn = 0;
+        gameDeltaHistory.clear();
 
         // Create initial game state with units spawned at potential base locations
         Unit[] initialUnits = createInitialUnits(gameParams);
-        this.currentGameState = new GameState(initialUnits, System.currentTimeMillis());
+        previousGameState = null;
+        currentGameState = new GameState(initialUnits, System.currentTimeMillis());
 
         // Add to history
-        this.gameStateHistory.add(currentGameState);
-
+        this.gameDeltaHistory.add(statusUpdater.generateDelta(this.previousGameState, this.currentGameState));
         return currentGameState;
     }
 
@@ -92,17 +97,17 @@ public class GameEngineImpl implements GameEngine {
         return currentGameState;
     }
 
-    /**
-     * Gets the game state history.
+    /**Gets the game delta history.
      *
-     * @return a list of all game states from initialization to current
+     * @return a list of all game deltas from initialization to current
      */
     @Override
-    public List<GameState> getGameStateHistory() {
-        return new ArrayList<>(gameStateHistory);
+    public List<GameDelta> getGameDeltaHistory() {
+        return new ArrayList<>(gameDeltaHistory);
     }
 
     /**
+     * 
      * Handles player actions and updates the game state.
      *
      * @param playerId the player ID performing the actions
@@ -115,17 +120,17 @@ public class GameEngineImpl implements GameEngine {
             return false;
         }
 
-        if (!activePlayers.contains(playerId)) {
+        if (playerId == null || !activePlayers.contains(playerId)) {
             return false;
         }
 
-        // Validate actions
         List<InvalidAction> invalidActions = actionValidator.validate(currentGameState, playerId, actions);
         if (!invalidActions.isEmpty()) {
             return false;
         }
 
-        // Update game stat
+        // Update game state
+        previousGameState = currentGameState;
         currentGameState = statusUpdater.update(currentGameState, playerId, actions);
 
         // Spawn food after state update
@@ -133,7 +138,7 @@ public class GameEngineImpl implements GameEngine {
         spawnFood(updatedUnits, gameParams);
         currentGameState = new GameState(updatedUnits.toArray(new Unit[0]), currentGameState.startAt());
 
-        gameStateHistory.add(currentGameState);
+        gameDeltaHistory.add(statusUpdater.generateDelta(previousGameState, currentGameState));
         currentTurn++;
 
         return true;

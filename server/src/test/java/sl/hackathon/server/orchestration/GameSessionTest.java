@@ -93,7 +93,7 @@ class GameSessionTest {
         when(mockEngine.isGameEnded()).thenReturn(true); // End immediately
         when(mockEngine.getActivePlayers()).thenReturn(Arrays.asList(PLAYER_1, PLAYER_2));
         when(mockEngine.getGameState()).thenReturn(initialState);
-        when(mockEngine.getGameStateHistory()).thenReturn(List.of(initialState));
+        when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], initialState.startAt())));
         when(mockEngine.getWinnerId()).thenReturn(PLAYER_1);
         
         gameSession = new GameSession(mockEngine, mockRegistry, gameParams);
@@ -126,7 +126,7 @@ class GameSessionTest {
         // Game ends after 3 turns
         when(mockEngine.isGameEnded()).thenReturn(false, false, false, true);
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
-        when(mockEngine.getGameStateHistory()).thenReturn(List.of(state));
+        when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
         when(mockEngine.getWinnerId()).thenReturn(PLAYER_1);
         
         // Use very short timeout for quick test execution (3 turns * 200ms = 600ms max)
@@ -165,7 +165,7 @@ class GameSessionTest {
         when(mockEngine.getActivePlayers()).thenReturn(Arrays.asList(PLAYER_1, PLAYER_2));
         when(mockEngine.isGameEnded()).thenReturn(false, true);
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
-        when(mockEngine.getGameStateHistory()).thenReturn(List.of(state));
+        when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
         when(mockEngine.getWinnerId()).thenReturn(null);
         
         gameSession = new GameSession(mockEngine, mockRegistry, gameParams);
@@ -223,7 +223,7 @@ class GameSessionTest {
         when(mockEngine.getActivePlayers()).thenReturn(Arrays.asList(PLAYER_1, PLAYER_2));
         when(mockEngine.isGameEnded()).thenReturn(false, true);
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
-        when(mockEngine.getGameStateHistory()).thenReturn(List.of(state));
+        when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
         when(mockEngine.getWinnerId()).thenReturn(null);
         
         gameSession = new GameSession(mockEngine, mockRegistry, shortTimeoutParams);
@@ -263,7 +263,7 @@ class GameSessionTest {
         when(mockEngine.getActivePlayers()).thenReturn(Arrays.asList(PLAYER_1, PLAYER_2));
         when(mockEngine.isGameEnded()).thenReturn(false); // Never ends naturally
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
-        when(mockEngine.getGameStateHistory()).thenReturn(List.of(state));
+        when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
         when(mockEngine.getWinnerId()).thenReturn(null);
         
         gameSession = new GameSession(mockEngine, mockRegistry, gameParams);
@@ -299,7 +299,7 @@ class GameSessionTest {
         when(mockEngine.getActivePlayers()).thenReturn(Arrays.asList(PLAYER_1, PLAYER_2));
         when(mockEngine.isGameEnded()).thenReturn(false, true);
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
-        when(mockEngine.getGameStateHistory()).thenReturn(Arrays.asList(state, state));
+        when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
         when(mockEngine.getWinnerId()).thenReturn(PLAYER_1);
         
         gameSession = new GameSession(mockEngine, mockRegistry, gameParams);
@@ -333,7 +333,6 @@ class GameSessionTest {
             .orElse(null);
         
         assertNotNull(endMsg);
-        assertEquals(PLAYER_1, endMsg.getGameStatusUpdate().winnerId());
-        assertEquals(GameStatus.END, endMsg.getGameStatusUpdate().status());
+        assertEquals(PLAYER_1, endMsg.getGameEnd().winnerId());
     }
 }

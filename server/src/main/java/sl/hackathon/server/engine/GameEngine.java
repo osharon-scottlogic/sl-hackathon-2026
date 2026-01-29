@@ -38,11 +38,11 @@ public interface GameEngine {
     GameState getGameState();
 
     /**
-     * Gets the game state history.
+     * Gets the game delta history.
      *
-     * @return a list of all game states from initialization to current
+     * @return a list of all game deltas from initialization to current
      */
-    List<GameState> getGameStateHistory();
+    List<GameDelta> getGameDeltaHistory();
 
     /**
      * Handles player actions and updates the game state.

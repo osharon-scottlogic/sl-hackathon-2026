@@ -126,16 +126,14 @@ public class MessageCodecTest {
         Unit[] units = {
             new Unit(1, "player-1", UnitType.PAWN, new Position(0, 0))
         };
-        GameState gameState = new GameState(units, System.currentTimeMillis());
         Dimension dimension = new Dimension(10, 10);
         MapLayout mapLayout = new MapLayout(dimension, new Position[0]);
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
+        GameStart gameStart = new GameStart(
             mapLayout,
-            new GameState[]{gameState},
-            null
+            units,
+            System.currentTimeMillis()
         );
-        StartGameMessage message = new StartGameMessage(statusUpdate);
+        StartGameMessage message = new StartGameMessage(gameStart);
 
         // Act
         String json = MessageCodec.serialize(message);
@@ -143,14 +141,14 @@ public class MessageCodecTest {
         // Assert
         assertNotNull(json);
         assertTrue(json.contains("\"type\":\"START_GAME\""));
-        assertTrue(json.contains("\"gameStatusUpdate\""));
+        assertTrue(json.contains("\"gameStart\""));
     }
 
     @Test
     @DisplayName("Should deserialize JSON to StartGameMessage")
     public void testDeserializeStartGameMessage() {
         // Arrange
-        String json = "{\"type\":\"START_GAME\",\"gameStatusUpdate\":{\"status\":\"START\",\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"history\":[{\"units\":[{\"id\":1,\"owner\":\"player-1\",\"type\":\"PAWN\",\"position\":{\"x\":0,\"y\":0}}],\"startAt\":1000}],\"winnerId\":null}}";
+        String json = "{\"type\":\"START_GAME\",\"gameStart\":{\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"initialUnits\":[{\"id\":1,\"owner\":\"player-1\",\"type\":\"PAWN\",\"position\":{\"x\":0,\"y\":0}}],\"timestamp\":1000}}";
 
         // Act
         Message message = MessageCodec.deserialize(json);
@@ -158,9 +156,8 @@ public class MessageCodecTest {
         // Assert
         assertInstanceOf(StartGameMessage.class, message);
         StartGameMessage startMsg = (StartGameMessage) message;
-        assertNotNull(startMsg.getGameStatusUpdate());
-        assertEquals(1, startMsg.getGameStatusUpdate().history()[0].units().length);
-        assertEquals(GameStatus.START, startMsg.getGameStatusUpdate().status());
+        assertNotNull(startMsg.getGameStart());
+        assertEquals(1, startMsg.getGameStart().initialUnits().length);
     }
 
     @Test
@@ -170,16 +167,14 @@ public class MessageCodecTest {
         Unit[] units = {
             new Unit(2, "player-2", UnitType.BASE, new Position(5, 5))
         };
-        GameState gameState = new GameState(units, 2000L);
         Dimension dimension = new Dimension(10, 10);
         MapLayout mapLayout = new MapLayout(dimension, new Position[0]);
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
+        GameStart gameStart = new GameStart(
             mapLayout,
-            new GameState[]{gameState},
-            null
+            units,
+            2000L
         );
-        StartGameMessage originalMessage = new StartGameMessage(statusUpdate);
+        StartGameMessage originalMessage = new StartGameMessage(gameStart);
 
         // Act
         Message roundTrippedMessage = MessageCodec.roundTrip(originalMessage);
@@ -187,8 +182,8 @@ public class MessageCodecTest {
         // Assert
         assertInstanceOf(StartGameMessage.class, roundTrippedMessage);
         StartGameMessage result = (StartGameMessage) roundTrippedMessage;
-        assertEquals(1, result.getGameStatusUpdate().history()[0].units().length);
-        assertEquals(2, result.getGameStatusUpdate().history()[0].units()[0].id());
+        assertEquals(1, result.getGameStart().initialUnits().length);
+        assertEquals(2, result.getGameStart().initialUnits()[0].id());
     }
 
     // ==================== NextTurnMessage Tests ====================
@@ -254,13 +249,13 @@ public class MessageCodecTest {
     public void testSerializeEndGameMessage() {
         // Arrange
         MapLayout mapLayout = new MapLayout(new Dimension(10, 10), new Position[]{});
-        GameStatusUpdate gameStatusUpdate = new GameStatusUpdate(
-            GameStatus.END,
+        GameEnd gameEnd = new GameEnd(
             mapLayout,
-            new GameState[]{},
-            "player-1"
+            new GameDelta[]{},
+            "player-1",
+            System.currentTimeMillis()
         );
-        EndGameMessage message = new EndGameMessage(gameStatusUpdate);
+        EndGameMessage message = new EndGameMessage(gameEnd);
 
         // Act
         String json = MessageCodec.serialize(message);
@@ -268,14 +263,14 @@ public class MessageCodecTest {
         // Assert
         assertNotNull(json);
         assertTrue(json.contains("\"type\":\"END_GAME\""));
-        assertTrue(json.contains("\"gameStatusUpdate\""));
+        assertTrue(json.contains("\"gameEnd\""));
     }
 
     @Test
     @DisplayName("Should deserialize JSON to EndGameMessage")
     public void testDeserializeEndGameMessage() {
         // Arrange
-        String json = "{\"type\":\"END_GAME\",\"gameStatusUpdate\":{\"status\":\"END\",\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"history\":[],\"winnerId\":\"player-1\"}}";
+        String json = "{\"type\":\"END_GAME\",\"gameEnd\":{\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"deltas\":[],\"winnerId\":\"player-1\",\"timestamp\":1000}}";
 
         // Act
         Message message = MessageCodec.deserialize(json);
@@ -283,8 +278,8 @@ public class MessageCodecTest {
         // Assert
         assertInstanceOf(EndGameMessage.class, message);
         EndGameMessage endMsg = (EndGameMessage) message;
-        assertNotNull(endMsg.getGameStatusUpdate());
-        assertEquals(GameStatus.END, endMsg.getGameStatusUpdate().status());
+        assertNotNull(endMsg.getGameEnd());
+        assertEquals("player-1", endMsg.getGameEnd().winnerId());
     }
 
     @Test
@@ -292,13 +287,13 @@ public class MessageCodecTest {
     public void testRoundTripEndGameMessage() {
         // Arrange
         MapLayout mapLayout = new MapLayout(new Dimension(15, 15), new Position[]{new Position(5, 5)});
-        GameStatusUpdate gameStatusUpdate = new GameStatusUpdate(
-            GameStatus.END,
+        GameEnd gameEnd = new GameEnd(
             mapLayout,
-            new GameState[]{},
-            "player-2"
+            new GameDelta[]{},
+            "player-2",
+            System.currentTimeMillis()
         );
-        EndGameMessage originalMessage = new EndGameMessage(gameStatusUpdate);
+        EndGameMessage originalMessage = new EndGameMessage(gameEnd);
 
         // Act
         Message roundTrippedMessage = MessageCodec.roundTrip(originalMessage);
@@ -306,7 +301,7 @@ public class MessageCodecTest {
         // Assert
         assertInstanceOf(EndGameMessage.class, roundTrippedMessage);
         EndGameMessage result = (EndGameMessage) roundTrippedMessage;
-        assertEquals("player-2", result.getGameStatusUpdate().winnerId());
+        assertEquals("player-2", result.getGameEnd().winnerId());
     }
 
     // ==================== InvalidOperationMessage Tests ====================
@@ -530,16 +525,14 @@ public class MessageCodecTest {
             new Unit(2, "player-1", UnitType.PAWN, new Position(0, 1)),
             new Unit(3, "player-2", UnitType.BASE, new Position(9, 9))
         };
-        GameState gameState = new GameState(units, 1000L);
         Dimension dimension = new Dimension(10, 10);
         MapLayout mapLayout = new MapLayout(dimension, new Position[0]);
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
+        GameStart gameStart = new GameStart(
             mapLayout,
-            new GameState[]{gameState},
-            null
+            units,
+            1000L
         );
-        StartGameMessage message = new StartGameMessage(statusUpdate);
+        StartGameMessage message = new StartGameMessage(gameStart);
 
         // Act
         Message roundTripped = MessageCodec.roundTrip(message);
@@ -547,7 +540,7 @@ public class MessageCodecTest {
         // Assert
         assertInstanceOf(StartGameMessage.class, roundTripped);
         StartGameMessage result = (StartGameMessage) roundTripped;
-        assertEquals(3, result.getGameStatusUpdate().history()[0].units().length);
+        assertEquals(3, result.getGameStart().initialUnits().length);
     }
 
     @Test

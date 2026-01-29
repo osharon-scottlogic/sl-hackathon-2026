@@ -278,17 +278,40 @@ class GameStatusUpdaterTest {
 
     @Test
     void testGameNotEndedWithBothPlayers() {
-        Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit pawn2 = new Unit(2, "player-2", UnitType.PAWN, new Position(10, 10));
-        GameState gameState = new GameState(new Unit[]{pawn1, pawn2}, System.currentTimeMillis());
+        Unit base1 = new Unit(1, "player-1", UnitType.BASE, new Position(0, 0));
+        Unit pawn1 = new Unit(2, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit base2 = new Unit(3, "player-2", UnitType.BASE, new Position(9, 9));
+        Unit pawn2 = new Unit(4, "player-2", UnitType.PAWN, new Position(8, 8));
+        GameState gameState = new GameState(new Unit[]{base1, pawn1, base2, pawn2}, System.currentTimeMillis());
 
         assertFalse(updater.hasGameEnded(gameState), "Game should not end with both players having units");
     }
 
     @Test
+    void testGameEndedWhenPlayerHasNoBase() {
+        Unit base1 = new Unit(1, "player-1", UnitType.BASE, new Position(0, 0));
+        Unit pawn1 = new Unit(2, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit pawn2 = new Unit(3, "player-2", UnitType.PAWN, new Position(8, 8));
+        GameState gameState = new GameState(new Unit[]{base1, pawn1, pawn2}, System.currentTimeMillis());
+
+        assertTrue(updater.hasGameEnded(gameState), "Game should end when a player has no BASE");
+    }
+
+    @Test
+    void testGameEndedWhenPlayerHasNoPawns() {
+        Unit base1 = new Unit(1, "player-1", UnitType.BASE, new Position(0, 0));
+        Unit pawn1 = new Unit(2, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit base2 = new Unit(3, "player-2", UnitType.BASE, new Position(9, 9));
+        GameState gameState = new GameState(new Unit[]{base1, pawn1, base2}, System.currentTimeMillis());
+
+        assertTrue(updater.hasGameEnded(gameState), "Game should end when a player has no PAWN units");
+    }
+
+    @Test
     void testGameEndedWithOnePlayer() {
         Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
-        GameState gameState = new GameState(new Unit[]{pawn1}, System.currentTimeMillis());
+        Unit base1 = new Unit(2, "player-1", UnitType.BASE, new Position(5, 5));
+        GameState gameState = new GameState(new Unit[]{pawn1,base1}, System.currentTimeMillis());
 
         assertTrue(updater.hasGameEnded(gameState), "Game should end with only one player");
     }
@@ -305,8 +328,9 @@ class GameStatusUpdaterTest {
     @Test
     void testGetWinnerWhenGameEnded() {
         Unit pawn1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
-        Unit base1 = new Unit(2, "player-1", UnitType.BASE, new Position(0, 0));
-        GameState gameState = new GameState(new Unit[]{pawn1, base1}, System.currentTimeMillis());
+        Unit base1 = new Unit(2, "player-1", UnitType.BASE, new Position(5, 5));
+        Unit base2 = new Unit(3, "player-1", UnitType.BASE, new Position(0, 0));
+        GameState gameState = new GameState(new Unit[]{pawn1, base1, base2}, System.currentTimeMillis());
 
         String winner = updater.getWinnerId(gameState);
         assertEquals("player-1", winner, "Player-1 should be the winner");
@@ -377,6 +401,95 @@ class GameStatusUpdaterTest {
         assertNotNull(u2);
         assertEquals(10, u2.position().x(), "Pawn-2 X should remain 10");
         assertEquals(10, u2.position().y(), "Pawn-2 Y should remain 10");
+    }
+
+    // ===== DELTA GENERATION TESTS =====
+
+    @Test
+    void testGenerateDelta_UnitsAdded() {
+        Unit unit1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        GameState previousState = new GameState(new Unit[]{unit1}, System.currentTimeMillis());
+
+        Unit unit2 = new Unit(2, "player-1", UnitType.PAWN, new Position(6, 6));
+        GameState newState = new GameState(new Unit[]{unit1, unit2}, System.currentTimeMillis());
+
+        GameDelta delta = updater.generateDelta(previousState, newState);
+
+        assertEquals(1, delta.addedOrModified().length, "Should have 1 added unit");
+        assertEquals(2, delta.addedOrModified()[0].id(), "Added unit should have ID 2");
+        assertEquals(0, delta.removed().length, "No units removed");
+    }
+
+    @Test
+    void testGenerateDelta_UnitsRemoved() {
+        Unit unit1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit2 = new Unit(2, "player-2", UnitType.PAWN, new Position(6, 6));
+        GameState previousState = new GameState(new Unit[]{unit1, unit2}, System.currentTimeMillis());
+
+        GameState newState = new GameState(new Unit[]{unit1}, System.currentTimeMillis());
+
+        GameDelta delta = updater.generateDelta(previousState, newState);
+
+        assertEquals(0, delta.addedOrModified().length, "No units added or modified");
+        assertEquals(1, delta.removed().length, "Should have 1 removed unit");
+        assertEquals(2, delta.removed()[0], "Removed unit ID should be 2");
+    }
+
+    @Test
+    void testGenerateDelta_UnitsModified() {
+        Unit unit1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        GameState previousState = new GameState(new Unit[]{unit1}, System.currentTimeMillis());
+
+        Unit unit1Moved = new Unit(1, "player-1", UnitType.PAWN, new Position(6, 5));
+        GameState newState = new GameState(new Unit[]{unit1Moved}, System.currentTimeMillis());
+
+        GameDelta delta = updater.generateDelta(previousState, newState);
+
+        assertEquals(1, delta.addedOrModified().length, "Should have 1 modified unit");
+        assertEquals(1, delta.addedOrModified()[0].id());
+        assertEquals(6, delta.addedOrModified()[0].position().x(), "Position should be updated");
+        assertEquals(0, delta.removed().length, "No units removed");
+    }
+
+    @Test
+    void testGenerateDelta_NoChanges() {
+        Unit unit1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        GameState previousState = new GameState(new Unit[]{unit1}, System.currentTimeMillis());
+        GameState newState = new GameState(new Unit[]{unit1}, System.currentTimeMillis());
+
+        GameDelta delta = updater.generateDelta(previousState, newState);
+
+        assertEquals(0, delta.addedOrModified().length, "No units changed");
+        assertEquals(0, delta.removed().length, "No units removed");
+    }
+
+    @Test
+    void testGenerateDelta_ComplexScenario() {
+        // Previous state: 3 units
+        Unit unit1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
+        Unit unit2 = new Unit(2, "player-1", UnitType.PAWN, new Position(6, 6));
+        Unit unit3 = new Unit(3, "player-2", UnitType.PAWN, new Position(7, 7));
+        GameState previousState = new GameState(new Unit[]{unit1, unit2, unit3}, System.currentTimeMillis());
+
+        // New state: unit1 moved, unit2 unchanged, unit3 removed, unit4 added
+        Unit unit1Moved = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 6));
+        Unit unit4 = new Unit(4, "player-1", UnitType.PAWN, new Position(8, 8));
+        GameState newState = new GameState(new Unit[]{unit1Moved, unit2, unit4}, System.currentTimeMillis());
+
+        GameDelta delta = updater.generateDelta(previousState, newState);
+
+        assertEquals(2, delta.addedOrModified().length, "Should have 2 added/modified units (1 moved, 1 added)");
+        assertEquals(1, delta.removed().length, "Should have 1 removed unit");
+        assertEquals(3, delta.removed()[0], "Unit 3 should be removed");
+        
+        // Verify added/modified contains both unit1 (moved) and unit4 (added)
+        boolean hasUnit1 = false, hasUnit4 = false;
+        for (Unit u : delta.addedOrModified()) {
+            if (u.id() == 1) hasUnit1 = true;
+            if (u.id() == 4) hasUnit4 = true;
+        }
+        assertTrue(hasUnit1, "Delta should contain modified unit1");
+        assertTrue(hasUnit4, "Delta should contain added unit4");
     }
 
     // ===== HELPER METHODS =====

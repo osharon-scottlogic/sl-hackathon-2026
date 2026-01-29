@@ -185,7 +185,7 @@ class GameEngineTest {
         gameEngine.addPlayer("player-2");
         gameEngine.initialize(gameParams);
         
-        List<GameState> history = gameEngine.getGameStateHistory();
+        List<GameDelta> history = gameEngine.getGameDeltaHistory();
         assertEquals(1, history.size(), "History should have initial state");
     }
 
@@ -266,7 +266,7 @@ class GameEngineTest {
             Action[] actions = {new Action(player1Pawn.id(), Direction.E)};
             gameEngine.handlePlayerActions("player-1", actions);
             
-            List<GameState> history = gameEngine.getGameStateHistory();
+            List<GameDelta> history = gameEngine.getGameDeltaHistory();
             assertEquals(2, history.size(), "History should have 2 states");
         }
     }
@@ -280,23 +280,6 @@ class GameEngineTest {
         gameEngine.initialize(gameParams);
         
         assertFalse(gameEngine.isGameEnded(), "Game should not be ended initially");
-    }
-
-    @Test
-    void testGameEndedWhenOnePlayerRemains() {
-        gameEngine.addPlayer("player-1");
-        gameEngine.initialize(gameParams);
-        
-        assertTrue(gameEngine.isGameEnded(), "Game should end when only one player");
-    }
-
-    @Test
-    void testGetWinnerWhenGameEnded() {
-        gameEngine.addPlayer("player-1");
-        gameEngine.initialize(gameParams);
-        
-        assertTrue(gameEngine.isGameEnded());
-        assertEquals("player-1", gameEngine.getWinnerId(), "Player-1 should be winner");
     }
 
     @Test

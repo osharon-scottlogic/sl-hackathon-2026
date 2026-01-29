@@ -12,10 +12,10 @@ import lombok.ToString;
 @Getter
 @ToString
 public final class StartGameMessage extends Message {
-    private final GameStatusUpdate gameStatusUpdate;
+    private final GameStart gameStart;
 
     @JsonCreator
-    public StartGameMessage(@JsonProperty("gameStatusUpdate") GameStatusUpdate gameStatusUpdate) {
-        this.gameStatusUpdate = gameStatusUpdate;
+    public StartGameMessage(@JsonProperty("gameStart") GameStart gameStart) {
+        this.gameStart = gameStart;
     }
 }

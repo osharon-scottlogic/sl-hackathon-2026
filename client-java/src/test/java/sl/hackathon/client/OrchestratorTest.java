@@ -69,6 +69,7 @@ class OrchestratorTest {
         
         // Verify callbacks were wired
         verify(mockServerAPI).setOnGameStart(any());
+        verify(mockServerAPI).setOnPlayerAssigned(any());
         verify(mockServerAPI).setOnNextTurn(any());
         verify(mockServerAPI).setOnGameEnd(any());
         verify(mockServerAPI).setOnInvalidOperation(any());
@@ -121,18 +122,10 @@ class OrchestratorTest {
             new Unit(1, testPlayerId, UnitType.PAWN, new Position(1, 1)),
             new Unit(2, testPlayerId, UnitType.BASE, new Position(2, 2))
         };
-        GameState initialState = new GameState(initialUnits, System.currentTimeMillis());
-        
+        long now = System.currentTimeMillis();
         MapLayout mapLayout = new MapLayout(new Dimension(10, 10), new Position[0]);
-        
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
-            mapLayout,
-            new GameState[]{initialState},
-            null
-        );
-        
-        StartGameMessage startMsg = new StartGameMessage(statusUpdate);
+        GameStart gameStart = new GameStart(mapLayout, initialUnits, now);
+        StartGameMessage startMsg = new StartGameMessage(gameStart);
         
         // Trigger callback
         onGameStart.accept(startMsg);
@@ -277,17 +270,10 @@ class OrchestratorTest {
         Consumer<EndGameMessage> onGameEnd = callbackCaptor.getValue();
         
         // Create end game message
+        long now = System.currentTimeMillis();
         MapLayout map = new MapLayout(new Dimension(10, 10), new Position[0]);
-        GameState[] history = new GameState[]{
-            new GameState(new Unit[0], System.currentTimeMillis())
-        };
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.END,
-            map,
-            history,
-            testPlayerId
-        );
-        EndGameMessage endMsg = new EndGameMessage(statusUpdate);
+        GameEnd gameEnd = new GameEnd(map, new Unit[0], new GameDelta[0], testPlayerId, now);
+        EndGameMessage endMsg = new EndGameMessage(gameEnd);
         
         // Trigger callback
         onGameEnd.accept(endMsg);
@@ -322,14 +308,9 @@ class OrchestratorTest {
         Consumer<EndGameMessage> onGameEnd = callbackCaptor.getValue();
         
         // Create end game message with this player as winner
+        long now = System.currentTimeMillis();
         MapLayout map = new MapLayout(new Dimension(10, 10), new Position[0]);
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.END,
-            map,
-            new GameState[0],
-            testPlayerId
-        );
-        EndGameMessage endMsg = new EndGameMessage(statusUpdate);
+        EndGameMessage endMsg = new EndGameMessage(new GameEnd(map, new Unit[0], new GameDelta[0], testPlayerId, now));
         
         // Trigger callback (should log victory)
         assertDoesNotThrow(() -> onGameEnd.accept(endMsg));
@@ -345,14 +326,9 @@ class OrchestratorTest {
         Consumer<EndGameMessage> onGameEnd = callbackCaptor.getValue();
         
         // Create end game message with different player as winner
+        long now = System.currentTimeMillis();
         MapLayout map = new MapLayout(new Dimension(10, 10), new Position[0]);
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.END,
-            map,
-            new GameState[0],
-            "player-2"
-        );
-        EndGameMessage endMsg = new EndGameMessage(statusUpdate);
+        EndGameMessage endMsg = new EndGameMessage(new GameEnd(map, new Unit[0], new GameDelta[0], "player-2", now));
         
         // Trigger callback (should log defeat)
         assertDoesNotThrow(() -> onGameEnd.accept(endMsg));

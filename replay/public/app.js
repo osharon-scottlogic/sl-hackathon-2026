@@ -3,6 +3,47 @@ let config = null;
 let currentGame = null;
 let games = [];
 
+function expandDeltaTurnsToFullStates(game) {
+    if (!game || !Array.isArray(game.turns) || game.turns.length === 0) {
+        return;
+    }
+
+    // Already expanded
+    if (game.turns[0] && Array.isArray(game.turns[0].units)) {
+        return;
+    }
+
+    const firstTurn = game.turns[0] || {};
+    const isDeltaFormat = ('addedOrModified' in firstTurn) || ('removed' in firstTurn);
+    if (!isDeltaFormat) {
+        return;
+    }
+
+    const unitById = new Map();
+    const expandedTurns = [];
+
+    for (const delta of game.turns) {
+        const removed = Array.isArray(delta?.removed) ? delta.removed : [];
+        for (const id of removed) {
+            unitById.delete(id);
+        }
+
+        const addedOrModified = Array.isArray(delta?.addedOrModified) ? delta.addedOrModified : [];
+        for (const unit of addedOrModified) {
+            if (unit && typeof unit.id === 'number') {
+                unitById.set(unit.id, unit);
+            }
+        }
+
+        expandedTurns.push({
+            ...delta,
+            units: Array.from(unitById.values())
+        });
+    }
+
+    game.turns = expandedTurns;
+}
+
 // Initialize application
 async function init() {
     try {
@@ -59,6 +100,9 @@ async function loadGame(filename) {
     try {
         const response = await fetch(`/api/games/${filename}`);
         currentGame = await response.json();
+
+        // New log format stores per-turn deltas; replay expects full state per turn.
+        expandDeltaTurnsToFullStates(currentGame);
         
         // Update UI
         document.querySelectorAll('.game-item').forEach(item => {

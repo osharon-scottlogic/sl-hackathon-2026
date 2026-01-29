@@ -129,7 +129,7 @@ public class ServerAPI {
         
         @Override
         public void handleGameEnd(EndGameMessage message) {
-            logger.info("Game ended, winner: {}", message.getGameStatusUpdate().winnerId());
+            logger.info("Game ended, winner: {}", message.getGameEnd() != null ? message.getGameEnd().winnerId() : "unknown");
             if (onGameEnd != null) {
                 onGameEnd.accept(message);
             }

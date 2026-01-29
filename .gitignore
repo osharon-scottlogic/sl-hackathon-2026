@@ -83,3 +83,4 @@ application-local.properties
 application-local.yml
 
 replay/node_modules/*
+client-java/game-logs/*

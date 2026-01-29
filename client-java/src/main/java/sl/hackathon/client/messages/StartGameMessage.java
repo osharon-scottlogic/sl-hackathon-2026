@@ -3,7 +3,7 @@ package sl.hackathon.client.messages;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
-import sl.hackathon.client.dtos.GameStatusUpdate;
+import sl.hackathon.client.dtos.GameStart;
 
 /**
  * Message broadcast to all clients indicating the game has started.
@@ -11,10 +11,10 @@ import sl.hackathon.client.dtos.GameStatusUpdate;
  */
 @Getter
 public final class StartGameMessage extends Message {
-    private final GameStatusUpdate gameStatusUpdate;
+    private final GameStart gameStart;
 
     @JsonCreator
-    public StartGameMessage(@JsonProperty("gameState") GameStatusUpdate gameStatusUpdate) {
-        this.gameStatusUpdate = gameStatusUpdate;
+    public StartGameMessage(@JsonProperty("gameStart") GameStart gameStart) {
+        this.gameStart = gameStart;
     }
 }

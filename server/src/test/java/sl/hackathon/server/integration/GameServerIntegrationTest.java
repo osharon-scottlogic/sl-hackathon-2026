@@ -140,15 +140,15 @@ class GameServerIntegrationTest {
         StartGameMessage start1 = (StartGameMessage) startMsg1;
         StartGameMessage start2 = (StartGameMessage) startMsg2;
 
-        assertNotNull(start1.getGameStatusUpdate(), "Start message should contain status update");
-        assertNotNull(start1.getGameStatusUpdate().map(), "Status update should contain map");
-        assertEquals(10, start1.getGameStatusUpdate().map().dimension().width());
-        assertEquals(10, start1.getGameStatusUpdate().map().dimension().height());
+        assertNotNull(start1.getGameStart(), "Start message should contain game start");
+        assertNotNull(start1.getGameStart().map(), "Game start should contain map");
+        assertEquals(10, start1.getGameStart().map().dimension().width());
+        assertEquals(10, start1.getGameStart().map().dimension().height());
 
         // Verify both clients received the same game state
         assertEquals(
-            objectMapper.writeValueAsString(start1.getGameStatusUpdate().map()),
-            objectMapper.writeValueAsString(start2.getGameStatusUpdate().map())
+            objectMapper.writeValueAsString(start1.getGameStart().map()),
+            objectMapper.writeValueAsString(start2.getGameStart().map())
         );
 
         // Play 3 turns
@@ -252,60 +252,5 @@ class GameServerIntegrationTest {
 //        assertInstanceOf(PlayerAssignedMessage.class, client1Messages.get(0));
 //        assertInstanceOf(StartGameMessage.class, client1Messages.get(1));
 //        assertInstanceOf(NextTurnMessage.class, client1Messages.get(2));
-//    }
-//
-//    @Test
-//    void testStateConsistency_bothClientsReceiveSameState() throws Exception {
-//        // Create and connect two clients
-//        client1 = new TestWebSocketClient();
-//        client2 = new TestWebSocketClient();
-//
-//        client1.connect(SERVER_URL);
-//        client2.connect(SERVER_URL);
-//
-//        // Skip PlayerAssignedMessage for both clients
-//        Message playerMsg1 = client1.waitForMessage(10000);
-//        assertNotNull(playerMsg1);
-//        assertInstanceOf(PlayerAssignedMessage.class, playerMsg1);
-//
-//        Message playerMsg2 = client2.waitForMessage(5000);
-//        assertNotNull(playerMsg2);
-//        assertInstanceOf(PlayerAssignedMessage.class, playerMsg2);
-//
-//        // Get start messages
-//        StartGameMessage start1 = (StartGameMessage) client1.waitForMessage(5000);
-//        StartGameMessage start2 = (StartGameMessage) client2.waitForMessage(5000);
-//
-//        assertNotNull(start1);
-//        assertNotNull(start2);
-//
-//        // Verify both clients see the same initial state
-//        GameStatusUpdate status1 = start1.getGameStatusUpdate();
-//        GameStatusUpdate status2 = start2.getGameStatusUpdate();
-//
-//        assertEquals( objectMapper.writeValueAsString(status1.map()), objectMapper.writeValueAsString(status2.map()), "Both clients should see same map");
-//
-//        assertEquals(status1.history().length, status2.history().length,
-//            "Both clients should see same history length");
-//
-//        if (status1.history().length > 0 && status2.history().length > 0) {
-//            GameState state1 = status1.history()[0];
-//            GameState state2 = status2.history()[0];
-//
-//            assertEquals(state1.units().length, state2.units().length,
-//                "Both clients should see same number of units");
-//        }
-//
-//        // Get first turn messages
-//        NextTurnMessage turn1 = (NextTurnMessage) client1.waitForMessage(5000);
-//        NextTurnMessage turn2 = (NextTurnMessage) client2.waitForMessage(5000);
-//
-//        assertNotNull(turn1);
-//        assertNotNull(turn2);
-//
-//        // Verify both clients see the same turn state
-//        assertNotEquals(turn1.getPlayerId(), turn2.getPlayerId(), "Turns for different players");
-//        assertEquals(turn1.getGameState().units().length, turn2.getGameState().units().length,
-//            "Both clients should see same number of units");
 //    }
 }

@@ -114,19 +114,13 @@ public class Orchestrator {
     private void handleGameStart(StartGameMessage message) {
         logger.info("Game started!");
         
-        GameStatusUpdate statusUpdate = message.getGameStatusUpdate();
-        if (statusUpdate != null) {
+        GameStart gameStart = message.getGameStart();
+        if (gameStart != null) {
             // Extract map layout from status update
-            this.mapLayout = statusUpdate.map();
-            
-            // Extract initial game state from history (first element)
-            if (statusUpdate.history() != null && statusUpdate.history().length > 0) {
-                this.currentGameState = statusUpdate.history()[0];
-                logger.info("Initial game state received with " + Ansi.YELLOW + "{}" + Ansi.RESET + " units", currentGameState.units().length);
-            } else {
-                logger.warn("No initial game state in history");
-            }
-            
+            this.mapLayout = gameStart.map();
+
+            this.currentGameState = new GameState(gameStart.initialUnits(), gameStart.timestamp());
+
             logger.info("Map layout initialized: " + Ansi.YELLOW + "{}x{}" + Ansi.RESET, 
                 mapLayout.dimension().width(), 
                 mapLayout.dimension().height());
@@ -225,9 +219,9 @@ public class Orchestrator {
     private void handleGameEnd(EndGameMessage message) {
         logger.info("Game ended!");
         
-        GameStatusUpdate statusUpdate = message.getGameStatusUpdate();
-        if (statusUpdate != null) {
-            String winnerId = statusUpdate.winnerId();
+        GameEnd gameEnd = message.getGameEnd();
+        if (gameEnd != null) {
+            String winnerId = gameEnd.winnerId();
             if (winnerId != null) {
                 if (winnerId.equals(playerId)) {
                     logger.info("Victory! Player " + Ansi.YELLOW + "{}" + Ansi.RESET + " won the game", winnerId);
@@ -239,7 +233,7 @@ public class Orchestrator {
             }
             
             // Write game log
-            writeGameLog(statusUpdate);
+            writeGameLog(gameEnd);
         }
         
         cleanup();
@@ -271,9 +265,9 @@ public class Orchestrator {
      * Writes game log to JSON file in the game-logs directory.
      * File name includes timestamp for uniqueness.
      * 
-     * @param statusUpdate the final game status update
+     * @param gameEnd the final game status update
      */
-    private void writeGameLog(GameStatusUpdate statusUpdate) {
+    private void writeGameLog(GameEnd gameEnd) {
         try {
             // Create game-logs directory if it doesn't exist
             File logsDir = new File(GAME_LOGS_DIR);
@@ -283,7 +277,7 @@ public class Orchestrator {
             
             // Generate filename with timestamp
             String timestamp = String.valueOf(System.currentTimeMillis());
-            String filename = writeLogFile(statusUpdate, timestamp);
+            String filename = writeLogFile(gameEnd, timestamp);
 
             logger.info("Game log written to: {}", filename);
             
@@ -292,15 +286,14 @@ public class Orchestrator {
         }
     }
 
-    private String writeLogFile(GameStatusUpdate statusUpdate, String timestamp) throws IOException {
+    private String writeLogFile(GameEnd gameEnd, String timestamp) throws IOException {
         String filename = GAME_LOGS_DIR + "game_" + timestamp + ".json";
 
         // Extract all unique players from first state
         java.util.Set<String> playerIds = new java.util.LinkedHashSet<>();
-        if (statusUpdate.history() != null && statusUpdate.history().length > 0) {
-            GameState firstState = statusUpdate.history()[0];
-            if (firstState.units() != null) {
-                for (Unit unit : firstState.units()) {
+        if (gameEnd.deltas() != null && gameEnd.deltas().length > 0) {
+            if (gameEnd.initialUnits() != null) {
+                for (Unit unit : gameEnd.initialUnits()) {
                     if (unit.owner() != null && !unit.owner().equals("none")) {
                         playerIds.add(unit.owner());
                     }
@@ -310,34 +303,8 @@ public class Orchestrator {
 
         // Write game log as JSON
         try (FileWriter writer = new FileWriter(filename)) {
-            // Simple JSON representation
-            writer.write("{\n");
-            
-            // Players array
-            writer.write("  \"players\": " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(playerIds.toArray(new String[0])) + ",\n");
-            
-            // Map dimensions
-            writer.write("  \"mapDimensions\": ");
-            if (statusUpdate.map() != null && statusUpdate.map().dimension() != null) {
-                writer.write(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(statusUpdate.map().dimension()));
-            } else {
-                writer.write("null");
-            }
-            writer.write(",\n");
-            
-            // Wall positions
-            writer.write("  \"walls\": ");
-            if (statusUpdate.map() != null && statusUpdate.map().walls() != null) {
-                writer.write(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(statusUpdate.map().walls()));
-            } else {
-                writer.write("[]");
-            }
-            writer.write(",\n");
-            
-            writer.write("  \"winner\": \"" + (statusUpdate.winnerId() != null ? statusUpdate.winnerId() : "none") + "\",\n");
-            writer.write("  \"timestamp\": " + timestamp + ",\n");
-            writer.write("  \"turns\": \n" + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(statusUpdate.history()) +"\n");
-            writer.write("}\n");
+            GameLog gameLog = new GameLog(playerIds.toArray(new String[0]),gameEnd.map().dimension(), gameEnd.map().walls(), gameEnd.winnerId(), timestamp, gameEnd.deltas());
+            writer.write(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(gameLog));
         }
         return filename;
     }

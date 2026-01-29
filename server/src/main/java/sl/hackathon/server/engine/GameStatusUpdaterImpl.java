@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.*;
 
+
 import java.util.*;
 
 import static sl.hackathon.server.dtos.UnitType.*;
@@ -12,8 +13,6 @@ import static sl.hackathon.server.dtos.UnitType.*;
  * Implementation of GameStatusUpdater that handles state updates and collision resolution.
  */
 public class GameStatusUpdaterImpl implements GameStatusUpdater {
-
-    private static final Logger logger = LoggerFactory.getLogger(GameStatusUpdaterImpl.class);
     private final UnitIdGenerator unitIdGenerator;
 
     public GameStatusUpdaterImpl(UnitIdGenerator unitIdGenerator) {
@@ -78,15 +77,67 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
 
         // Build final unit list
         List<Unit> finalUnitsList = movedUnits.values().stream()
-            .filter(unit -> !unitsToRemove.contains(unit.id()))
-            .toList();
-        finalUnitsList = new ArrayList<>(finalUnitsList);
-        finalUnitsList.addAll(getNewlyAddedUnits(unitsToAdd,findBase(playerId, units)));
+                .filter(unit -> !unitsToRemove.contains(unit.id()))
+                .toList();
+
+        if (unitsToAdd > 0) {
+            finalUnitsList = new ArrayList<>(finalUnitsList);
+            finalUnitsList.addAll(getNewlyAddedUnits(unitsToAdd,findBase(playerId, units)));
+        }
         Unit[] finalUnits = finalUnitsList.toArray(Unit[]::new);
 
         return new GameState(finalUnits, gameState.startAt());
     }
 
+    /**
+     * Generates a delta representing changes from previous state to new state.
+     *
+     * @param previousState the previous game state
+     * @param newState the new game state
+     * @return the delta representing changes
+     */
+    @Override
+    public GameDelta generateDelta(GameState previousState, GameState newState) {
+        if (previousState == null) {
+            return new GameDelta(newState.units(), new int[0], System.currentTimeMillis());
+        }
+
+        // Build maps for quick lookup
+        Map<Integer, Unit> previousUnits = getMapById(previousState.units());
+        Map<Integer, Unit> newUnits = getMapById(newState.units());
+
+        // Find added or modified units
+        List<Unit> addedOrModified = new ArrayList<>();
+        for (Unit newUnit : newState.units()) {
+            Unit previousUnit = previousUnits.get(newUnit.id());
+            if (previousUnit == null || !previousUnit.equals(newUnit)) {
+                // Unit was added or Unit was modified (position or other properties changed)
+                addedOrModified.add(newUnit);
+            }
+        }
+
+        // Find removed units
+        List<Integer> removed = new ArrayList<>();
+        for (Unit previousUnit : previousState.units()) {
+            if (!newUnits.containsKey(previousUnit.id())) {
+                removed.add(previousUnit.id());
+            }
+        }
+
+        return new GameDelta(
+            addedOrModified.toArray(new Unit[0]),
+            removed.stream().mapToInt(Integer::intValue).toArray(),
+            System.currentTimeMillis()
+        );
+    }
+
+    private Map<Integer, Unit> getMapById (Unit[] units) {
+        Map<Integer, Unit> map = new HashMap<>();
+        for (Unit unit : units) {
+            map.put(unit.id(), unit);
+        }
+        return map;
+    }
 
     private List<Unit> getNewlyAddedUnits(int unitsToAdd, Unit baseUnit) {
         List<Unit> units = new ArrayList<>();
@@ -114,15 +165,25 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
             return true;
         }
 
-        // Game ends if only one player has units
-        Set<String> owners = new HashSet<>();
+        // Game ends if a player has no BASE or doesn't have any PAWN units.
+        Map<String, Map<UnitType, Integer>> playerUnitCounts = new HashMap<>();
         for (Unit unit : gameState.units()) {
-            if (!unit.owner().equals("none")) {
-                owners.add(unit.owner());
+            if (unit == null || unit.owner() == null || unit.owner().equals("none") || unit.type() == null) {
+                continue;
             }
+            if (!playerUnitCounts.containsKey(unit.owner())) {
+                playerUnitCounts.put(unit.owner(), new HashMap<>());
+                playerUnitCounts.get(unit.owner()).put(PAWN, 0);
+                playerUnitCounts.get(unit.owner()).put(BASE, 0);
+            }
+
+            Map<UnitType, Integer> unitCounts = playerUnitCounts.get(unit.owner());
+            unitCounts.put(unit.type(), unitCounts.getOrDefault(unit.type(), 0) + 1);
         }
 
-        return owners.size() <= 1;
+        return playerUnitCounts.size() == 1 || playerUnitCounts.values().stream()     // Stream<Map<String, Integer>>
+           .flatMap(inner -> inner.values().stream()) // Stream<Integer>
+           .anyMatch(i -> i == 0);
     }
 
     /**
@@ -137,15 +198,25 @@ public class GameStatusUpdaterImpl implements GameStatusUpdater {
             return null;
         }
 
-        Set<String> owners = new HashSet<>();
+        // Game ends if a player has no BASE or doesn't have any PAWN units.
+        Map<String, Map<UnitType, Integer>> playerUnitCounts = new HashMap<>();
         for (Unit unit : gameState.units()) {
-            if (!unit.owner().equals("none")) {
-                owners.add(unit.owner());
+            if (unit == null || unit.owner() == null || unit.owner().equals("none") || unit.type() == null) {
+                continue;
             }
+
+            playerUnitCounts.putIfAbsent(unit.owner(), new HashMap<>());
+            Map<UnitType, Integer> unitCounts = playerUnitCounts.get(unit.owner());
+            unitCounts.put(unit.type(), unitCounts.getOrDefault(unit.type(), 0) + 1);
         }
 
-        if (owners.size() == 1) {
-            return owners.iterator().next();
+        for (String playerId : playerUnitCounts.keySet()) {
+            Map<UnitType, Integer> unitCounts = playerUnitCounts.get(playerId);
+            int baseCount = unitCounts.getOrDefault(BASE, 0);
+            int pawnCount = unitCounts.getOrDefault(PAWN, 0);
+            if (baseCount > 0 && pawnCount > 0) {
+                return playerId;
+            }
         }
 
         return null;

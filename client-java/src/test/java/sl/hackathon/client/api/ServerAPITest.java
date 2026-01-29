@@ -77,14 +77,13 @@ class ServerAPITest {
             new Position[]{new Position(5, 5)}
         );
         
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
+        GameStart gameStart = new GameStart(
             mapLayout,
-            new GameState[]{state},
-            null
+            state.units(),
+            System.currentTimeMillis()
         );
         
-        StartGameMessage message = new StartGameMessage(statusUpdate);
+        StartGameMessage message = new StartGameMessage(gameStart);
         
         // Simulate handler invocation (internal method call for unit testing)
         serverAPI.setOnGameStart(msg -> {
@@ -99,7 +98,7 @@ class ServerAPITest {
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertNotNull(receivedMessage.get());
-        assertEquals(statusUpdate, receivedMessage.get().getGameStatusUpdate());
+        assertEquals(gameStart, receivedMessage.get().getGameStart());
     }
     
     @Test
@@ -140,23 +139,23 @@ class ServerAPITest {
             latch.countDown();
         });
         
-        GameState[] history = new GameState[]{
-            new GameState(new Unit[0], System.currentTimeMillis())
-        };
-        
         MapLayout mapLayout = new MapLayout(
             new Dimension(10, 10),
             new Position[]{new Position(5, 5)}
         );
         
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.END,
+        Unit[] initialUnits = new Unit[0];
+        GameDelta[] deltas = new GameDelta[0];
+        
+        GameEnd gameEnd = new GameEnd(
             mapLayout,
-            history,
-            "player1"
+            initialUnits,
+            deltas,
+            "player1",
+            System.currentTimeMillis()
         );
         
-        EndGameMessage message = new EndGameMessage(statusUpdate);
+        EndGameMessage message = new EndGameMessage(gameEnd);
         
         // Trigger handler
         if (serverAPI.onGameEnd != null) {
@@ -165,7 +164,7 @@ class ServerAPITest {
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertNotNull(receivedMessage.get());
-        assertEquals("player1", receivedMessage.get().getGameStatusUpdate().winnerId());
+        assertEquals("player1", receivedMessage.get().getGameEnd().winnerId());
     }
     
     @Test
@@ -231,14 +230,13 @@ class ServerAPITest {
         // Second handler (should replace first)
         serverAPI.setOnGameStart(msg -> latch2.countDown());
         
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
+        GameStart gameStart = new GameStart(
             new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[]{new GameState(new Unit[0], System.currentTimeMillis())},
-            null
+            new Unit[0],
+            System.currentTimeMillis()
         );
         
-        StartGameMessage message = new StartGameMessage(statusUpdate);
+        StartGameMessage message = new StartGameMessage(gameStart);
         
         // Trigger handler
         if (serverAPI.onGameStart != null) {
@@ -290,11 +288,8 @@ class ServerAPITest {
         // Should not throw when handlers are null
         assertDoesNotThrow(() -> {
             if (serverAPI.onGameStart != null) {
-                GameStatusUpdate statusUpdate = new GameStatusUpdate(
-                    GameStatus.START,
-                    new MapLayout(new Dimension(10, 10), new Position[0]),
-                    new GameState[]{new GameState(new Unit[0], 0)},
-                    null
+                GameStart statusUpdate = new GameStart(
+                    new MapLayout(new Dimension(10, 10), new Position[0]), new Unit[0], 0
                 );
                 serverAPI.onGameStart.accept(new StartGameMessage(statusUpdate));
             }

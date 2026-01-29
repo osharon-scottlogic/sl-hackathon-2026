@@ -57,19 +57,12 @@ class GameMessageRouterTest {
         
         testHandler.setOnStartGame(msg -> latch.countDown());
         
-        GameState state = new GameState(
-            new Unit[]{new Unit(1, "p1", UnitType.PAWN, new Position(1, 1))},
-            System.currentTimeMillis()
-        );
-        
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
-            new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[]{state},
-            null
-        );
-        
-        StartGameMessage message = new StartGameMessage(statusUpdate);
+        long now = System.currentTimeMillis();
+        MapLayout mapLayout = new MapLayout(new Dimension(10, 10), new Position[0]);
+        Unit[] initialUnits = new Unit[]{new Unit(1, "p1", UnitType.PAWN, new Position(1, 1))};
+        GameStart gameStart = new GameStart(mapLayout, initialUnits, now);
+
+        StartGameMessage message = new StartGameMessage(gameStart);
         
         router.routeMessage(message);
         
@@ -103,13 +96,10 @@ class GameMessageRouterTest {
         
         testHandler.setOnEndGame(msg -> latch.countDown());
         
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.END,
-            new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[0],
-            "winner1"
-        );
-        EndGameMessage message = new EndGameMessage(statusUpdate);
+        long now = System.currentTimeMillis();
+        MapLayout mapLayout = new MapLayout(new Dimension(10, 10), new Position[0]);
+        GameEnd gameEnd = new GameEnd(mapLayout, new Unit[0], new GameDelta[0], "winner1", now);
+        EndGameMessage message = new EndGameMessage(gameEnd);
         
         router.routeMessage(message);
         
@@ -142,16 +132,10 @@ class GameMessageRouterTest {
         
         testHandler.setOnStartGame(msg -> latch.countDown());
         
-        GameState state = new GameState(new Unit[0], System.currentTimeMillis());
-        
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
-            new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[]{state},
-            null
-        );
-        
-        StartGameMessage originalMessage = new StartGameMessage(statusUpdate);
+        long now = System.currentTimeMillis();
+        MapLayout mapLayout = new MapLayout(new Dimension(10, 10), new Position[0]);
+        GameStart gameStart = new GameStart(mapLayout, new Unit[0], now);
+        StartGameMessage originalMessage = new StartGameMessage(gameStart);
         String json = MessageCodec.serialize(originalMessage);
         
         router.routeMessage(json);
@@ -218,23 +202,14 @@ class GameMessageRouterTest {
         testHandler.setOnNextTurn(msg -> latch.countDown());
         testHandler.setOnEndGame(msg -> latch.countDown());
         
-        GameState state = new GameState(new Unit[0], System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        GameState state = new GameState(new Unit[0], now);
+        MapLayout mapLayout = new MapLayout(new Dimension(10, 10), new Position[0]);
+        GameStart gameStart = new GameStart(mapLayout, new Unit[0], now);
         
-        GameStatusUpdate startUpdate = new GameStatusUpdate(
-            GameStatus.START,
-            new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[]{state},
-            null
-        );
-        
-        router.routeMessage(new StartGameMessage(startUpdate));
+        router.routeMessage(new StartGameMessage(gameStart));
         router.routeMessage(new NextTurnMessage("p1", state));
-        router.routeMessage(new EndGameMessage(new GameStatusUpdate(
-            GameStatus.END, 
-            new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[0],
-            "p1"
-        )));
+        router.routeMessage(new EndGameMessage(new GameEnd(mapLayout, new Unit[0], new GameDelta[0], "p1", now)));
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(1, testHandler.startGameCount.get());
@@ -252,16 +227,11 @@ class GameMessageRouterTest {
         
         testHandler.setOnError(error -> latch.countDown());
         
-        GameState state = new GameState(new Unit[0], System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        MapLayout mapLayout = new MapLayout(new Dimension(10, 10), new Position[0]);
+        GameStart gameStart = new GameStart(mapLayout, new Unit[0], now);
         
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
-            new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[]{state},
-            null
-        );
-        
-        router.routeMessage(new StartGameMessage(statusUpdate));
+        router.routeMessage(new StartGameMessage(gameStart));
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(1, testHandler.errorCount.get());

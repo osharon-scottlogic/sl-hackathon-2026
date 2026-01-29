@@ -169,9 +169,7 @@ public class WebSocketAdapter {
             logger.warn("Received message before handler initialized");
             return;
         }
-        
-        logger.debug("Received message from "+Ansi.YELLOW+"{}"+Ansi.RESET+": "+Ansi.YELLOW+"{}"+Ansi.RESET, playerId, message);
-        
+
         try {
             clientHandler.handleMessage(message);
         } catch (Exception e) {

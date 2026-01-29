@@ -45,16 +45,13 @@ class TransportAndRouterIntegrationTest {
         });
         
         // Simulate receiving a message
-        GameState state = new GameState(new Unit[0], System.currentTimeMillis());
-        
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.START,
+        GameStart gameStart = new GameStart(
             new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[]{state},
-            null
+                new Unit[0],
+            0
         );
         
-        StartGameMessage message = new StartGameMessage(statusUpdate);
+        StartGameMessage message = new StartGameMessage(gameStart);
         String json = MessageCodec.serialize(message);
         
         // In a real scenario, this would come from WebSocket @OnMessage
@@ -123,18 +120,17 @@ class TransportAndRouterIntegrationTest {
         
         // Wire transport to router
         transport.setOnMessageReceived(router::routeMessage);
-        
+
         // Simulate game flow
         GameState state = new GameState(new Unit[0], System.currentTimeMillis());
-        
+
         // Start game
-        GameStatusUpdate startUpdate = new GameStatusUpdate(
-            GameStatus.START,
+        GameStart gameStart = new GameStart(
             new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[]{state},
-            null
+                new Unit[0],
+            0
         );
-        router.routeMessage(new StartGameMessage(startUpdate));
+        router.routeMessage(new StartGameMessage(gameStart));
         assertTrue(startLatch.await(1, TimeUnit.SECONDS));
         
         // Next turn
@@ -142,13 +138,14 @@ class TransportAndRouterIntegrationTest {
         assertTrue(turnLatch.await(1, TimeUnit.SECONDS));
         
         // End game
-        GameStatusUpdate statusUpdate = new GameStatusUpdate(
-            GameStatus.END,
+        GameEnd gameEnd = new GameEnd(
             new MapLayout(new Dimension(10, 10), new Position[0]),
-            new GameState[0],
-            "player1"
+                new Unit[0],
+                new GameDelta[0],
+                null,
+                0
         );
-        router.routeMessage(new EndGameMessage(statusUpdate));
+        router.routeMessage(new EndGameMessage(gameEnd));
         assertTrue(endLatch.await(1, TimeUnit.SECONDS));
     }
     
