@@ -11,6 +11,9 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static sl.hackathon.server.util.Ansi.green;
+import static sl.hackathon.server.util.Ansi.yellow;
+
 /**
  * ClientRegistry manages player tracking and message routing for connected clients.
  * Thread-safe implementation supporting exactly 2 players.
@@ -133,7 +136,7 @@ public class ClientRegistry {
             throw new IllegalStateException("Client handler not found for player: " + playerId);
         }
         
-        logger.debug("Sending message to player " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
+        logger.debug(green("Sending message to player {}"), playerId);
         handler.send(message);
     }
     
@@ -151,15 +154,18 @@ public class ClientRegistry {
         
         ClientHandler handler = clientHandlers.remove(clientId);
         if (handler != null) {
+
+            handler.close();
+
             String playerId = clientToPlayer.remove(clientId);
             if (playerId != null) {
                 playerToClient.remove(playerId);
-                logger.info("Unregistered client " + Ansi.YELLOW + "{}" + Ansi.RESET + " (" + Ansi.YELLOW + "{}" + Ansi.RESET + ")", clientId, playerId);
+                logger.info(green("Unregistered client {} ({})"), clientId, playerId);
             } else {
-                logger.warn("Client " + Ansi.YELLOW + "{}" + Ansi.RESET + " had no player ID mapping", clientId);
+                logger.warn(yellow("Client {} had no player ID mapping"), clientId);
             }
         } else {
-            logger.debug("Client " + Ansi.YELLOW + "{}" + Ansi.RESET + " was not registered", clientId);
+            logger.debug(yellow("Client {} was not registered"), clientId);
         }
     }
     

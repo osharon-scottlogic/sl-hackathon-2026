@@ -9,6 +9,9 @@ import sl.hackathon.server.orchestration.GameServer;
 import sl.hackathon.server.orchestration.ServerConfig;
 import sl.hackathon.server.util.Ansi;
 
+import static sl.hackathon.server.util.Ansi.red;
+import static sl.hackathon.server.util.Ansi.green;
+
 /**
  * Main entry point for the game server application.
  * Initializes and starts the game server with default configuration.
@@ -21,7 +24,7 @@ public class Main {
     private static final long DEFAULT_TURN_TIME_LIMIT = 15000L; // 15 seconds
 
     public static void main(String[] args) {
-        logger.info(Ansi.MAGENTA+"Starting Game Server..."+Ansi.RESET);
+        logger.info(green("Starting Game Server..."));
         
         try {
             // Create map configuration
@@ -47,8 +50,8 @@ public class Main {
             
             // Start the server
             gameServer.start();
-            logger.info("Game server started successfully on port " + Ansi.YELLOW + "{}" + Ansi.RESET, DEFAULT_PORT);
-            logger.info("Server is ready to accept connections at " + Ansi.YELLOW + "ws://localhost:{}/game" + Ansi.RESET, DEFAULT_PORT);
+            logger.info(green("Game server started successfully on port {}"), DEFAULT_PORT);
+            logger.info(green("Server is ready to accept connections at {}"), "ws://localhost:"+DEFAULT_PORT+"/game");
             
             // Wait for game session to complete
             waitForGameCompletion(gameServer);
@@ -60,7 +63,7 @@ public class Main {
             System.exit(0);
             
         } catch (Exception e) {
-            logger.error(Ansi.RED + "Failed to start game server" + Ansi.RESET, e);
+            logger.error(red("Failed to start game server"), e);
             System.exit(1);
         }
     }

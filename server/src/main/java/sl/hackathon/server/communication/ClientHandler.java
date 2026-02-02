@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
+import static sl.hackathon.server.util.Ansi.redBg;
+import static sl.hackathon.server.util.Ansi.yellow;
+
 /**
  * ClientHandler wraps a WebSocket session and provides message handling capabilities.
  * Each client connection has its own unique handler instance.
@@ -142,7 +145,7 @@ public class ClientHandler {
                 session.close();
                 logger.info("Closed connection for client " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId);
             } catch (IOException e) {
-                logger.error(Ansi.RED + "Error closing connection for client " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId, e.getMessage(), e);
+                logger.error(redBg(yellow("Error closing connection for client {}: {}")), clientId, e.getMessage(), e);
             }
         }
     }

@@ -16,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static sl.hackathon.server.util.Ansi.*;
+
 /**
  * GameSession orchestrates the game loop and manages turn progression.
  * Implements Runnable to execute in a background thread.
@@ -128,20 +130,20 @@ public class GameSession implements Runnable {
             // Initialize the game
             initializeGame();
 
-            logger.debug("game initialized with "+Ansi.YELLOW+"{}"+Ansi.RESET+" units", gameEngine.getGameState().units().length);
+            logger.debug(green("game initialized with {} units"), gameEngine.getGameState().units().length);
             // Main game loop
             runGameLoop();
             
             // Broadcast end game message
             broadcastEndGame();
-            
+
             logger.info("GameSession completed successfully");
             
         } catch (InterruptedException e) {
             logger.warn("GameSession interrupted", e);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            logger.error(Ansi.RED + "GameSession encountered an error" + Ansi.RESET, e);
+            logger.error(redBg("GameSession encountered an error"), e);
             throw new RuntimeException("GameSession failed", e);
         }
     }
@@ -166,7 +168,7 @@ public class GameSession implements Runnable {
      * Initializes the game with the configured GameParams.
      */
     private void initializeGame() throws JsonProcessingException {
-        logger.info("Initializing game with params: " + Ansi.YELLOW + "{}" + Ansi.RESET, objectMapper.writeValueAsString(gameParams));
+        logger.info(green("Initializing game with params: {}"), objectMapper.writeValueAsString(gameParams));
         
         GameState initialState = gameEngine.initialize(gameParams);
         gameStarted = true;
@@ -190,14 +192,14 @@ public class GameSession implements Runnable {
      * @throws InterruptedException if interrupted during turn processing
      */
     private void runGameLoop() throws InterruptedException {
-        logger.info("\nStarting game loop with "+Ansi.YELLOW+"{}"+ Ansi.RESET+" units", gameEngine.getGameState().units().length);
+        logger.info(green("\nStarting game loop with {} units"), gameEngine.getGameState().units().length);
 
         while (!gameEngine.isGameEnded() && !shutdown) {
             processTurn();
             currentTurnId++;
         }
         
-        logger.info("\nGame loop ended. Game ended: {}, Shutdown: {}", gameEngine.isGameEnded(), shutdown);
+        logger.info(green("\nGame loop ended. Game ended: {}, Shutdown: {}"), gameEngine.isGameEnded(), shutdown);
     }
     
     /**
@@ -223,7 +225,7 @@ public class GameSession implements Runnable {
             try {
                 clientRegistry.send(playerId, turnMessage);
             } catch (Exception e) {
-                logger.error(Ansi.RED + "Failed to send NextTurnMessage to player " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId, e.getMessage());
+                logger.error(redBg(yellow("Failed to send NextTurnMessage to player {}: {}")), playerId, e.getMessage());
             }
         }
         
@@ -232,7 +234,7 @@ public class GameSession implements Runnable {
         boolean actionsReceived = turnLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
         
         if (!actionsReceived) {
-            logger.warn("Turn " + Ansi.YELLOW + "{}" + Ansi.RESET + " timed out after " + Ansi.YELLOW + "{}" + Ansi.RESET + "ms. Processing partial actions.", currentTurnId, timeoutMs);
+            logger.warn(yellow("Turn {} timed out after {}ms. Processing partial actions."), currentTurnId, timeoutMs);
         }
         
         // Process each player's actions
@@ -240,17 +242,17 @@ public class GameSession implements Runnable {
             Action[] actions = pendingActions.getOrDefault(playerId, new Action[0]);
             
             if (actions.length == 0) {
-                logger.warn("Player " + Ansi.YELLOW + "{}" + Ansi.RESET + " submitted no actions for turn " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId, currentTurnId);
+                logger.warn(yellow("Player {} submitted no actions for turn {}"), playerId, currentTurnId);
             }
             
             boolean success = gameEngine.handlePlayerActions(playerId, actions);
             
             if (!success) {
-                logger.warn("Failed to process actions for player " + Ansi.YELLOW + "{}" + Ansi.RESET + " on turn " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId, currentTurnId);
+                logger.warn(yellow("Failed to process actions for player {} on turn {}"), playerId, currentTurnId);
             }
         }
         
-        logger.debug("Turn " + Ansi.YELLOW + "{}" + Ansi.RESET + " completed, " + Ansi.YELLOW + "{}" + Ansi.RESET + " units on the board", currentTurnId, gameEngine.getGameState().units().length);
+        logger.debug(green("Turn {} completed, {} units on the board"), currentTurnId, gameEngine.getGameState().units().length);
     }
     
     /**
@@ -258,8 +260,6 @@ public class GameSession implements Runnable {
      */
     private void broadcastEndGame() throws JsonProcessingException {
         logger.info("Broadcasting end game message");
-
-        logger.info(Ansi.MAGENTA+gameEngine.getGameDeltaHistory().size()+Ansi.RESET);
 
         GameEnd gameEnd = new GameEnd(
             new MapLayout(gameParams.mapConfig().dimension(), gameParams.mapConfig().walls()),
@@ -271,6 +271,6 @@ public class GameSession implements Runnable {
         EndGameMessage endMessage = new EndGameMessage(gameEnd);
         clientRegistry.broadcast(endMessage);
         
-        logger.info("End game message broadcast. Winner: " + Ansi.YELLOW + "{}" + Ansi.RESET + " after " + Ansi.YELLOW + "{}" + Ansi.RESET + " turns", gameEngine.getWinnerId(), gameEngine.getGameDeltaHistory().size());
+        logger.info(green("End game message broadcast. Winner: {} after {} turns"), gameEngine.getWinnerId(), gameEngine.getGameDeltaHistory().size());
     }
 }
