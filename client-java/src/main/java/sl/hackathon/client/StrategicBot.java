@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
  */
 public class StrategicBot implements Bot {
     private static final long DECISION_BUFFER_MS = 1000; // 1 second buffer for safety
-    private static final long TIMEOUT_CHECK_INTERVAL_MS = 100;
 
     @Override
     public Action[] handleState(String playerId, MapLayout mapLayout, GameState gameState, long timeLimitMs) {
