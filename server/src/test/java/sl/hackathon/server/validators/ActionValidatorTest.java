@@ -14,7 +14,7 @@ class ActionValidatorTest {
 
     @BeforeEach
     void setUp() {
-        validator = new ActionValidatorImpl();
+        validator = new ActionValidator();
 
         // Create a sample game state with units
         Unit unit1 = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));

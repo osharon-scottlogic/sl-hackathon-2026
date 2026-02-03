@@ -13,6 +13,9 @@ import sl.hackathon.server.dtos.*;
 import sl.hackathon.server.engine.GameEngine;
 import sl.hackathon.server.util.Ansi;
 
+import static sl.hackathon.server.util.Ansi.green;
+import static sl.hackathon.server.util.Ansi.redBg;
+
 /**
  * Main orchestrator for the game server.
  * Wires together GameEngine, ClientRegistry, GameSession, and WebSocket communication.
@@ -73,18 +76,18 @@ public class GameServer {
         
         // Wire client connect/disconnect to GameEngine
         WebSocketAdapter.setOnClientConnect(playerId -> {
-            logger.info("Client connected: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
+            logger.info(green("Client connected: {}"), playerId);
             gameEngine.addPlayer(playerId);
         });
         
         WebSocketAdapter.setOnClientDisconnect(playerId -> {
-            logger.info("Client disconnected: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
+            logger.info(green("Client disconnected {}"), playerId);
             gameEngine.removePlayer(playerId);
         });
         
         // Wire incoming action messages to GameEngine via GameSession
         WebSocketAdapter.setOnMessage((playerId, message) -> {
-            logger.debug("Received message from " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId, message.getClass().getSimpleName());
+            logger.debug(green("Received message from {}:  {}"), playerId, message.getClass().getSimpleName());
             
             if (message instanceof ActionMessage actionMsg) {
                 if (gameSession != null) {
@@ -101,12 +104,12 @@ public class GameServer {
      * @throws IllegalStateException if server is already running
      */
     public void start() throws JsonProcessingException {
-        logger.info("Starting GameServer with config: " + Ansi.YELLOW + "{}" + Ansi.RESET, objectMapper.writeValueAsString(config));
+        logger.info(green("Starting GameServer with config: {}"), objectMapper.writeValueAsString(config));
         
         try {
             // Start WebSocket server
             webSocketServer.start();
-            logger.info("WebSocket server started on port " + Ansi.YELLOW + "{}" + Ansi.RESET, config.port());
+            logger.info(green("WebSocket server started on port {}"), config.port());
             
             // Create GameParams
             GameParams gameParams = new GameParams(
@@ -124,7 +127,7 @@ public class GameServer {
             logger.info("GameServer started successfully");
             
         } catch (Exception e) {
-            logger.error(Ansi.RED + "Failed to start GameServer" + Ansi.RESET, e);
+            logger.error(redBg("Failed to start GameServer"), e);
             stop();
             throw new RuntimeException("Failed to start GameServer", e);
         }
@@ -161,7 +164,7 @@ public class GameServer {
             logger.info("GameServer stopped successfully");
             System.exit(0);
         } catch (Exception e) {
-            logger.error(Ansi.RED + "Error during GameServer shutdown" + Ansi.RESET, e);
+            logger.error(redBg("Error during GameServer shutdown"), e);
         }
     }
     

@@ -94,8 +94,7 @@ class GameSessionTest {
         when(mockEngine.getActivePlayers()).thenReturn(Arrays.asList(PLAYER_1, PLAYER_2));
         when(mockEngine.getGameState()).thenReturn(initialState);
         when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], initialState.startAt())));
-        when(mockEngine.getWinnerId()).thenReturn(PLAYER_1);
-        
+
         gameSession = new GameSession(mockEngine, mockRegistry, gameParams);
         
         // Act
@@ -127,8 +126,7 @@ class GameSessionTest {
         when(mockEngine.isGameEnded()).thenReturn(false, false, false, true);
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
         when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
-        when(mockEngine.getWinnerId()).thenReturn(PLAYER_1);
-        
+
         // Use very short timeout for quick test execution (3 turns * 200ms = 600ms max)
         GameParams shortTimeoutParams = new GameParams(gameParams.mapConfig(), 200L, 0.3f);
         gameSession = new GameSession(mockEngine, mockRegistry, shortTimeoutParams);
@@ -166,8 +164,7 @@ class GameSessionTest {
         when(mockEngine.isGameEnded()).thenReturn(false, true);
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
         when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
-        when(mockEngine.getWinnerId()).thenReturn(null);
-        
+
         gameSession = new GameSession(mockEngine, mockRegistry, gameParams);
         
         // Act
@@ -224,8 +221,7 @@ class GameSessionTest {
         when(mockEngine.isGameEnded()).thenReturn(false, true);
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
         when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
-        when(mockEngine.getWinnerId()).thenReturn(null);
-        
+
         gameSession = new GameSession(mockEngine, mockRegistry, shortTimeoutParams);
         
         // Act
@@ -264,8 +260,7 @@ class GameSessionTest {
         when(mockEngine.isGameEnded()).thenReturn(false); // Never ends naturally
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
         when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
-        when(mockEngine.getWinnerId()).thenReturn(null);
-        
+
         gameSession = new GameSession(mockEngine, mockRegistry, gameParams);
         
         // Act
@@ -291,7 +286,8 @@ class GameSessionTest {
         when(mockRegistry.isReady()).thenReturn(true);
         
         Unit[] units = new Unit[]{
-            new Unit(1, PLAYER_1, UnitType.PAWN, new Position(1, 1))
+            new Unit(1, PLAYER_1, UnitType.PAWN, new Position(1, 1)),
+            new Unit(1, PLAYER_1, UnitType.BASE, new Position(0, 1))
         };
         GameState state = new GameState(units, System.currentTimeMillis());
         when(mockEngine.initialize(gameParams)).thenReturn(state);
@@ -300,38 +296,38 @@ class GameSessionTest {
         when(mockEngine.isGameEnded()).thenReturn(false, true);
         when(mockEngine.handlePlayerActions(anyString(), any())).thenReturn(true);
         when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
-        when(mockEngine.getWinnerId()).thenReturn(PLAYER_1);
-        
+
         gameSession = new GameSession(mockEngine, mockRegistry, gameParams);
-        
+
         // Act
+
         Thread sessionThread = new Thread(gameSession);
         sessionThread.start();
-        
+
         // Submit actions to complete turn quickly
         Thread.sleep(200);
         gameSession.submitAction(PLAYER_1, 0, new Action[0]);
         gameSession.submitAction(PLAYER_2, 0, new Action[0]);
-        
+
         sessionThread.join(3000);
-        
+
         // Assert
         ArgumentCaptor<Message> broadcastCaptor = ArgumentCaptor.forClass(Message.class);
         verify(mockRegistry, atLeast(2)).broadcast(broadcastCaptor.capture());
-        
+
         List<Message> broadcasts = broadcastCaptor.getAllValues();
-        assertTrue(broadcasts.stream().anyMatch(m -> m instanceof StartGameMessage), 
-            "Should broadcast StartGameMessage");
-        assertTrue(broadcasts.stream().anyMatch(m -> m instanceof EndGameMessage), 
-            "Should broadcast EndGameMessage");
-        
+        assertTrue(broadcasts.stream().anyMatch(m -> m instanceof StartGameMessage),
+                "Should broadcast StartGameMessage");
+        assertTrue(broadcasts.stream().anyMatch(m -> m instanceof EndGameMessage),
+                "Should broadcast EndGameMessage");
+
         // Verify EndGameMessage contains winner
         EndGameMessage endMsg = broadcasts.stream()
-            .filter(m -> m instanceof EndGameMessage)
-            .map(m -> (EndGameMessage) m)
-            .findFirst()
-            .orElse(null);
-        
+                .filter(m -> m instanceof EndGameMessage)
+                .map(m -> (EndGameMessage) m)
+                .findFirst()
+                .orElse(null);
+
         assertNotNull(endMsg);
         assertEquals(PLAYER_1, endMsg.getGameEnd().winnerId());
     }

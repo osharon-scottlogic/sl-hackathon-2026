@@ -80,11 +80,4 @@ public interface GameEngine {
      * @return true if the game has ended
      */
     boolean isGameEnded();
-
-    /**
-     * Gets the winner of the game if it has ended.
-     *
-     * @return the player ID of the winner, or null if game hasn't ended or no winner
-     */
-    String getWinnerId();
 }

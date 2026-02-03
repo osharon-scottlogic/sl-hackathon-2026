@@ -10,6 +10,7 @@ import sl.hackathon.server.communication.ClientRegistry;
 import sl.hackathon.server.dtos.*;
 import sl.hackathon.server.engine.GameEngine;
 import sl.hackathon.server.util.Ansi;
+import sl.hackathon.server.validators.GameEndValidator;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -258,19 +259,20 @@ public class GameSession implements Runnable {
     /**
      * Broadcasts the EndGameMessage with final game status and winner.
      */
-    private void broadcastEndGame() throws JsonProcessingException {
+    private void broadcastEndGame() {
         logger.info("Broadcasting end game message");
 
+        String winner = GameEndValidator.getWinnerId(gameEngine.getGameState());
         GameEnd gameEnd = new GameEnd(
             new MapLayout(gameParams.mapConfig().dimension(), gameParams.mapConfig().walls()),
             gameEngine.getGameDeltaHistory().toArray(new GameDelta[0]),
-            gameEngine.getWinnerId(),
+            winner,
             System.currentTimeMillis()
         );
         
         EndGameMessage endMessage = new EndGameMessage(gameEnd);
         clientRegistry.broadcast(endMessage);
         
-        logger.info(green("End game message broadcast. Winner: {} after {} turns"), gameEngine.getWinnerId(), gameEngine.getGameDeltaHistory().size());
+        logger.info(green("End game message broadcast. Winner: {} after {} turns"), winner, gameEngine.getGameDeltaHistory().size());
     }
 }

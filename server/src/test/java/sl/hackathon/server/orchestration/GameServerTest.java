@@ -13,11 +13,11 @@ import java.util.function.BiConsumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for GameServer.
- * 
  * Test coverage:
  * 1. Constructor validation
  * 2. Component wiring
@@ -29,7 +29,6 @@ class GameServerTest {
     
     private GameEngine mockEngine;
     private ServerConfig config;
-    private MapConfig mapConfig;
     private GameServer gameServer;
     
     // Use random port to avoid "Address already in use" errors between tests
@@ -45,13 +44,12 @@ class GameServerTest {
         // Setup default mock behaviors
         when(mockEngine.getActivePlayers()).thenReturn(java.util.List.of());
         when(mockEngine.getGameDeltaHistory()).thenReturn(java.util.List.of());
-        when(mockEngine.getWinnerId()).thenReturn(null);
-        
+
         // Create valid configuration with random port
         Dimension dimension = new Dimension(10, 10);
         Position[] walls = new Position[]{new Position(5, 5)};
         Position[] baseLocations = new Position[]{new Position(1, 1), new Position(9, 9)};
-        mapConfig = new MapConfig(dimension, walls, baseLocations);
+        MapConfig mapConfig = new MapConfig(dimension, walls, baseLocations);
         config = new ServerConfig(getAvailablePort(), mapConfig, 200L); // Use random port to avoid conflicts
         
         // Reset static state in WebSocketAdapter

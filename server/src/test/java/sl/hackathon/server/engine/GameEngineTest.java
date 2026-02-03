@@ -3,6 +3,7 @@ package sl.hackathon.server.engine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sl.hackathon.server.dtos.*;
+import sl.hackathon.server.validators.GameEndValidator;
 
 import java.util.List;
 
@@ -288,7 +289,7 @@ class GameEngineTest {
         gameEngine.addPlayer("player-2");
         gameEngine.initialize(gameParams);
         
-        assertNull(gameEngine.getWinnerId(), "No winner when game is still playing");
+        assertNull(GameEndValidator.getWinnerId(gameEngine.getGameState()), "No winner when game is still playing");
     }
 
     // ===== STATE CONSISTENCY TESTS =====

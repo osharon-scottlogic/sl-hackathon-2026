@@ -1,19 +1,12 @@
 package sl.hackathon.server.engine;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sl.hackathon.server.dtos.*;
+import sl.hackathon.server.validators.GameEndValidator;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class GameStatusUpdaterTest {
-    private GameStatusUpdater updater;
-
-    @BeforeEach
-    void setUp() {
-        updater = new GameStatusUpdaterImpl(new UnitIdGenerator());
-    }
-
     // ===== BASIC MOVEMENT TESTS =====
 
     @Test
@@ -22,7 +15,7 @@ class GameStatusUpdaterTest {
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
         Action action = new Action(1, Direction.N);
-        GameState newState = updater.update(gameState, "player-1", new Action[]{action});
+        GameState newState = GameStatusUpdater.update(gameState, "player-1", new Action[]{action}, new UnitGenerator());
 
         assertEquals(1, newState.units().length, "Should have 1 unit");
         assertEquals(5, newState.units()[0].position().x(), "X position should remain 5");
@@ -39,7 +32,7 @@ class GameStatusUpdaterTest {
             new Action(1, Direction.E),
             new Action(2, Direction.S)
         };
-        GameState newState = updater.update(gameState, "player-1", actions);
+        GameState newState = GameStatusUpdater.update(gameState, "player-1", actions, new UnitGenerator());
 
         assertEquals(2, newState.units().length, "Should have 2 units");
         Unit u1 = findUnitById(newState, 1);
@@ -78,7 +71,7 @@ class GameStatusUpdaterTest {
             GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
             Action action = new Action(1, directions[i]);
-            GameState newState = updater.update(gameState, "player-1", new Action[]{action});
+            GameState newState = GameStatusUpdater.update(gameState, "player-1", new Action[]{action}, new UnitGenerator());
 
             Unit moved = newState.units()[0];
             assertEquals(expectedPositions[i][0], moved.position().x(),
@@ -95,7 +88,7 @@ class GameStatusUpdaterTest {
         Unit unit = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
-        GameState newState = updater.update(gameState, "player-1", new Action[]{});
+        GameState newState = GameStatusUpdater.update(gameState, "player-1", new Action[]{}, new UnitGenerator());
 
         assertEquals(1, newState.units().length, "Should still have 1 unit");
         assertEquals(5, newState.units()[0].position().x(), "X should not change");
@@ -107,7 +100,7 @@ class GameStatusUpdaterTest {
         Unit unit = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
-        GameState newState = updater.update(gameState, "player-1", null);
+        GameState newState = GameStatusUpdater.update(gameState, "player-1", null, null);
 
         assertEquals(1, newState.units().length, "Should still have 1 unit");
         assertEquals(5, newState.units()[0].position().x(), "X should not change");
@@ -120,7 +113,7 @@ class GameStatusUpdaterTest {
         GameState gameState = new GameState(new Unit[]{unit}, System.currentTimeMillis());
 
         Action action = new Action(999, Direction.N);
-        GameState newState = updater.update(gameState,"player-1",  new Action[]{action});
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  new Action[]{action}, null);
 
         assertEquals(1, newState.units().length, "Should still have 1 unit");
         Unit moved = newState.units()[0];
@@ -142,7 +135,7 @@ class GameStatusUpdaterTest {
             new Action(2, Direction.W)  // move to (6, 5)
         };
 
-        GameState newState = updater.update(gameState,"player-1",  actions);
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  actions, null);
         assertEquals(0, newState.units().length, "Both enemy pawns should die in collision");
     }
 
@@ -158,7 +151,7 @@ class GameStatusUpdaterTest {
             new Action(2, Direction.N)  // move to (5, 6)
         };
 
-        GameState newState = updater.update(gameState,"player-1",  actions);
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  actions, null);
         assertEquals(0, newState.units().length, "Both enemy pawns should die in collision");
     }
 
@@ -176,7 +169,7 @@ class GameStatusUpdaterTest {
             new Action(2, Direction.W)  // move to (6, 5)
         };
 
-        GameState newState = updater.update(gameState,"player-1",  actions);
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  actions, null);
         assertEquals(2, newState.units().length, "Friendly pawns should survive collision");
         for (Unit unit : newState.units()) {
             assertEquals(6, unit.position().x(), "Both should be at position (6, 5)");
@@ -198,7 +191,7 @@ class GameStatusUpdaterTest {
             new Action(3, Direction.S)  // move to (6, 5)
         };
 
-        GameState newState = updater.update(gameState,"player-1",  actions);
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  actions, null);
         assertEquals(3, newState.units().length, "All friendly pawns should survive");
         for (Unit unit : newState.units()) {
             assertEquals(6, unit.position().x(), "All should be at position (6, 5)");
@@ -216,7 +209,7 @@ class GameStatusUpdaterTest {
         GameState gameState = new GameState(new Unit[]{pawn, food, base1}, System.currentTimeMillis());
 
         Action action = new Action(1, Direction.E);
-        GameState newState = updater.update(gameState,"player-1",  new Action[]{action});
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  new Action[]{action}, new UnitGenerator());
 
         assertEquals(3, newState.units().length, "Pawn should remain, food should be consumed");
         assertEquals(1, newState.units()[0].id(), "Pawn should survive");
@@ -238,7 +231,7 @@ class GameStatusUpdaterTest {
             new Action(2, Direction.N)  // move to (5, 6)
         };
 
-        GameState newState = updater.update(gameState,"player-1",  actions);
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  actions, new UnitGenerator());
         // When multiple pawns and food collide, food is consumed and pawns collide
         // Friendly behavior: if same owner they survive; if different owner they die
         assertEquals(3, newState.units().length, "Enemy pawns with food should all die");
@@ -253,7 +246,7 @@ class GameStatusUpdaterTest {
         GameState gameState = new GameState(new Unit[]{pawn, base}, System.currentTimeMillis());
 
         Action action = new Action(1, Direction.E);
-        GameState newState = updater.update(gameState,"player-1",  new Action[]{action});
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  new Action[]{action}, null);
 
         assertEquals(0, newState.units().length, "Both pawn and base should be destroyed");
     }
@@ -270,7 +263,7 @@ class GameStatusUpdaterTest {
             new Action(2, Direction.N)  // move to (5, 6)
         };
 
-        GameState newState = updater.update(gameState,"player-1",  actions);
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  actions, null);
         assertEquals(0, newState.units().length, "All pawns and base should be destroyed");
     }
 
@@ -284,7 +277,7 @@ class GameStatusUpdaterTest {
         Unit pawn2 = new Unit(4, "player-2", UnitType.PAWN, new Position(8, 8));
         GameState gameState = new GameState(new Unit[]{base1, pawn1, base2, pawn2}, System.currentTimeMillis());
 
-        assertFalse(updater.hasGameEnded(gameState), "Game should not end with both players having units");
+        assertFalse(GameEndValidator.hasGameEnded(gameState), "Game should not end with both players having units");
     }
 
     @Test
@@ -294,7 +287,7 @@ class GameStatusUpdaterTest {
         Unit pawn2 = new Unit(3, "player-2", UnitType.PAWN, new Position(8, 8));
         GameState gameState = new GameState(new Unit[]{base1, pawn1, pawn2}, System.currentTimeMillis());
 
-        assertTrue(updater.hasGameEnded(gameState), "Game should end when a player has no BASE");
+        assertTrue(GameEndValidator.hasGameEnded(gameState), "Game should end when a player has no BASE");
     }
 
     @Test
@@ -304,7 +297,7 @@ class GameStatusUpdaterTest {
         Unit base2 = new Unit(3, "player-2", UnitType.BASE, new Position(9, 9));
         GameState gameState = new GameState(new Unit[]{base1, pawn1, base2}, System.currentTimeMillis());
 
-        assertTrue(updater.hasGameEnded(gameState), "Game should end when a player has no PAWN units");
+        assertTrue(GameEndValidator.hasGameEnded(gameState), "Game should end when a player has no PAWN units");
     }
 
     @Test
@@ -313,14 +306,14 @@ class GameStatusUpdaterTest {
         Unit base1 = new Unit(2, "player-1", UnitType.BASE, new Position(5, 5));
         GameState gameState = new GameState(new Unit[]{pawn1,base1}, System.currentTimeMillis());
 
-        assertTrue(updater.hasGameEnded(gameState), "Game should end with only one player");
+        assertTrue(GameEndValidator.hasGameEnded(gameState), "Game should end with only one player");
     }
 
     @Test
     void testGameEndedWithNoUnits() {
         GameState gameState = new GameState(new Unit[]{}, System.currentTimeMillis());
 
-        assertTrue(updater.hasGameEnded(gameState), "Game should end with no units");
+        assertTrue(GameEndValidator.hasGameEnded(gameState), "Game should end with no units");
     }
 
     // ===== WINNER TESTS =====
@@ -332,7 +325,7 @@ class GameStatusUpdaterTest {
         Unit base2 = new Unit(3, "player-1", UnitType.BASE, new Position(0, 0));
         GameState gameState = new GameState(new Unit[]{pawn1, base1, base2}, System.currentTimeMillis());
 
-        String winner = updater.getWinnerId(gameState);
+        String winner = GameEndValidator.getWinnerId(gameState);
         assertEquals("player-1", winner, "Player-1 should be the winner");
     }
 
@@ -342,7 +335,7 @@ class GameStatusUpdaterTest {
         Unit pawn2 = new Unit(2, "player-2", UnitType.PAWN, new Position(10, 10));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2}, System.currentTimeMillis());
 
-        String winner = updater.getWinnerId(gameState);
+        String winner = GameEndValidator.getWinnerId(gameState);
         assertNull(winner, "No winner when game is still playing");
     }
 
@@ -350,7 +343,7 @@ class GameStatusUpdaterTest {
     void testGetWinnerWhenNoUnits() {
         GameState gameState = new GameState(new Unit[]{}, System.currentTimeMillis());
 
-        String winner = updater.getWinnerId(gameState);
+        String winner = GameEndValidator.getWinnerId(gameState);
         assertNull(winner, "No winner when no units remain");
     }
 
@@ -375,7 +368,7 @@ class GameStatusUpdaterTest {
             new Action(3, Direction.S)  // move to (6, 5)
         };
 
-        GameState newState = updater.update(gameState,"player-1",  actions);
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  actions, new UnitGenerator());
         // Food is consumed, but enemy pawns collide -> all die
         assertEquals(4, newState.units().length, "All units should be removed after collision");
     }
@@ -388,7 +381,7 @@ class GameStatusUpdaterTest {
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2}, System.currentTimeMillis());
 
         Action action = new Action(1, Direction.N);
-        GameState newState = updater.update(gameState,"player-1",  new Action[]{action});
+        GameState newState = GameStatusUpdater.update(gameState,"player-1",  new Action[]{action}, null);
 
         assertEquals(2, newState.units().length, "Both units should remain");
 
@@ -413,7 +406,7 @@ class GameStatusUpdaterTest {
         Unit unit2 = new Unit(2, "player-1", UnitType.PAWN, new Position(6, 6));
         GameState newState = new GameState(new Unit[]{unit1, unit2}, System.currentTimeMillis());
 
-        GameDelta delta = updater.generateDelta(previousState, newState);
+        GameDelta delta = GameDeltaFactory.get(previousState, newState);
 
         assertEquals(1, delta.addedOrModified().length, "Should have 1 added unit");
         assertEquals(2, delta.addedOrModified()[0].id(), "Added unit should have ID 2");
@@ -428,7 +421,7 @@ class GameStatusUpdaterTest {
 
         GameState newState = new GameState(new Unit[]{unit1}, System.currentTimeMillis());
 
-        GameDelta delta = updater.generateDelta(previousState, newState);
+        GameDelta delta = GameDeltaFactory.get(previousState, newState);
 
         assertEquals(0, delta.addedOrModified().length, "No units added or modified");
         assertEquals(1, delta.removed().length, "Should have 1 removed unit");
@@ -443,7 +436,7 @@ class GameStatusUpdaterTest {
         Unit unit1Moved = new Unit(1, "player-1", UnitType.PAWN, new Position(6, 5));
         GameState newState = new GameState(new Unit[]{unit1Moved}, System.currentTimeMillis());
 
-        GameDelta delta = updater.generateDelta(previousState, newState);
+        GameDelta delta = GameDeltaFactory.get(previousState, newState);
 
         assertEquals(1, delta.addedOrModified().length, "Should have 1 modified unit");
         assertEquals(1, delta.addedOrModified()[0].id());
@@ -457,7 +450,7 @@ class GameStatusUpdaterTest {
         GameState previousState = new GameState(new Unit[]{unit1}, System.currentTimeMillis());
         GameState newState = new GameState(new Unit[]{unit1}, System.currentTimeMillis());
 
-        GameDelta delta = updater.generateDelta(previousState, newState);
+        GameDelta delta = GameDeltaFactory.get(previousState, newState);
 
         assertEquals(0, delta.addedOrModified().length, "No units changed");
         assertEquals(0, delta.removed().length, "No units removed");
@@ -476,7 +469,7 @@ class GameStatusUpdaterTest {
         Unit unit4 = new Unit(4, "player-1", UnitType.PAWN, new Position(8, 8));
         GameState newState = new GameState(new Unit[]{unit1Moved, unit2, unit4}, System.currentTimeMillis());
 
-        GameDelta delta = updater.generateDelta(previousState, newState);
+        GameDelta delta = GameDeltaFactory.get(previousState, newState);
 
         assertEquals(2, delta.addedOrModified().length, "Should have 2 added/modified units (1 moved, 1 added)");
         assertEquals(1, delta.removed().length, "Should have 1 removed unit");

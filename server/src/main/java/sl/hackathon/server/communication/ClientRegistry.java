@@ -11,8 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static sl.hackathon.server.util.Ansi.green;
-import static sl.hackathon.server.util.Ansi.yellow;
+import static sl.hackathon.server.util.Ansi.*;
 
 /**
  * ClientRegistry manages player tracking and message routing for connected clients.
@@ -73,7 +72,7 @@ public class ClientRegistry {
         playerToClient.put(playerId, clientId);
         clientToPlayer.put(clientId, playerId);
         
-        logger.info("Registered client " + Ansi.YELLOW + "{}" + Ansi.RESET + " as " + Ansi.YELLOW + "{}" + Ansi.RESET, clientId, playerId);
+        logger.info(green("Registered client {} as {}"), clientId, playerId);
         
         return playerId;
     }
@@ -98,13 +97,13 @@ public class ClientRegistry {
             throw new IllegalArgumentException("Message cannot be null");
         }
         
-        logger.debug("Broadcasting message to " + Ansi.YELLOW + "{}" + Ansi.RESET + " clients", clientHandlers.size());
+        logger.debug(green("Broadcasting message to {} clients"), clientHandlers.size());
         
         for (ClientHandler handler : clientHandlers.values()) {
             try {
                 handler.send(message);
             } catch (Exception e) {
-                logger.error(Ansi.RED + "Failed to broadcast to client " + Ansi.YELLOW + "{}" + Ansi.RESET + ": " + Ansi.YELLOW + "{}" + Ansi.RESET, 
+                logger.error(redBg(yellow("Failed to broadcast to client {}: {}")),
                     handler.getClientId(), e.getMessage(), e);
             }
         }

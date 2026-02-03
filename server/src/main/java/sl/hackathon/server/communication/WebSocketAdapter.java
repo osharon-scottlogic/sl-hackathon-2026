@@ -1,19 +1,18 @@
 package sl.hackathon.server.communication;
 
 import jakarta.websocket.*;
+import jakarta.websocket.server.ServerEndpoint;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.Message;
-import sl.hackathon.server.dtos.MessageCodec;
 import sl.hackathon.server.dtos.PlayerAssignedMessage;
-
-import jakarta.websocket.server.ServerEndpoint;
 import sl.hackathon.server.util.Ansi;
 
-import java.io.IOException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+
+import static sl.hackathon.server.util.Ansi.*;
 
 /**
  * WebSocket server endpoint for game communication.
@@ -26,11 +25,6 @@ import java.util.function.Consumer;
 public class WebSocketAdapter {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketAdapter.class);
 
-    /**
-     * -- GETTER --
-     *  Gets the currently configured ClientRegistry.
-     *
-     */
     // Static references set via dependency injection
     @Getter
     private static ClientRegistry clientRegistry;
@@ -123,7 +117,7 @@ public class WebSocketAdapter {
         
         try {
             clientHandler = new ClientHandler(session);
-            logger.info("WebSocket connection opened: "+ Ansi.YELLOW+"{}"+Ansi.RESET, clientHandler.getClientId());
+            logger.info(green("WebSocket connection opened: {}"), clientHandler.getClientId());
             
             // Set message callback to forward messages to onMessageCallback
             clientHandler.setMessageCallback((clientId, message) -> {
@@ -134,12 +128,12 @@ public class WebSocketAdapter {
             
             // Register with ClientRegistry
             playerId = clientRegistry.register(clientHandler);
-            logger.info("Client "+Ansi.YELLOW+"{}"+Ansi.RESET +" registered as "+Ansi.YELLOW+"{}"+Ansi.RESET, clientHandler.getClientId(), playerId);
+            logger.info(green("Client {} registered as {}"), clientHandler.getClientId(), playerId);
             
             // Send player assignment message to client
             PlayerAssignedMessage playerAssignedMsg = new PlayerAssignedMessage(playerId);
             clientHandler.send(playerAssignedMsg);
-            logger.info("Sent player assignment to "+Ansi.YELLOW+"{}"+Ansi.RESET, playerId);
+            logger.info(green("Sent player assignment to {}"), playerId);
 
             // Invoke connection callback
             if (onClientConnectCallback != null) {
@@ -148,10 +142,10 @@ public class WebSocketAdapter {
             
         } catch (IllegalStateException e) {
             // Maximum players reached
-            logger.warn("Cannot register client: "+Ansi.YELLOW+"{}"+Ansi.RESET, e.getMessage());
+            logger.warn(yellow("Cannot register client: {}"), e.getMessage());
             closeSession(session);
         } catch (Exception e) {
-            logger.error("Error handling connection open: "+Ansi.YELLOW+"{}"+Ansi.RESET, e.getMessage(), e);
+            logger.error(redBg(yellow("Error handling connection open: {}")), e.getMessage(), e);
             closeSession(session);
         }
     }
@@ -173,7 +167,7 @@ public class WebSocketAdapter {
         try {
             clientHandler.handleMessage(message);
         } catch (Exception e) {
-            logger.error("Error handling message from "+Ansi.YELLOW+"{}"+Ansi.RESET+": "+Ansi.YELLOW+"{}"+Ansi.RESET, playerId, e.getMessage(), e);
+            logger.error(redBg(yellow("Error handling message from {}: {}")), playerId, e.getMessage(), e);
         }
     }
     
@@ -186,7 +180,7 @@ public class WebSocketAdapter {
      */
     @OnClose
     public void onClose(Session session, CloseReason closeReason) {
-        logger.info("WebSocket connection closed for "+Ansi.YELLOW+"{}"+Ansi.RESET+": "+Ansi.YELLOW+"{}"+Ansi.RESET,
+        logger.info(green("WebSocket connection closed for {}: {}"),
             playerId != null ? playerId : "unknown", 
             closeReason != null ? closeReason.getReasonPhrase() : "no reason");
         
@@ -211,7 +205,7 @@ public class WebSocketAdapter {
      */
     @OnError
     public void onError(Session session, Throwable throwable) {
-        logger.error(Ansi.RED + "WebSocket error for "+Ansi.YELLOW+"{}"+Ansi.RESET+": "+Ansi.YELLOW+"{}"+Ansi.RESET,
+        logger.error(redBg(yellow( "WebSocket error for {}: {}")),
             playerId != null ? playerId : "unknown", 
             throwable.getMessage(), 
             throwable);
@@ -232,7 +226,7 @@ public class WebSocketAdapter {
                     "Server cannot accept more connections"
                 ));
             } catch (Exception e) {
-                logger.error(Ansi.RED + "Error closing session: "+ Ansi.YELLOW + "{}"+Ansi.RESET, e.getMessage());
+                logger.error(redBg(yellow("Error closing session: {}")), e.getMessage());
             }
         }
     }

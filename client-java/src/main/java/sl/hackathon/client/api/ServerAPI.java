@@ -12,6 +12,8 @@ import sl.hackathon.client.transport.WebSocketTransport;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import static sl.hackathon.client.util.Ansi.*;
+
 /**
  * High-level client API for communicating with the game server.
  * Provides a simplified interface that wraps WebSocketTransport and GameMessageRouter.
@@ -65,10 +67,14 @@ public class ServerAPI {
      * @throws IOException if send fails
      */
     public void send(String playerId, Action[] actions) throws IOException {
-        ActionMessage message = new ActionMessage(playerId, actions);
-        String json = MessageCodec.serialize(message);
-        
-        logger.debug("Sending {} actions to server for player {}", actions.length, playerId);
+        String json = MessageCodec.serialize(new ActionMessage(playerId, actions));
+
+        if(actions.length > 0) {
+            logger.debug(green("Sending {} actions to server for player {}"), actions.length, playerId);
+        } else {
+            logger.debug(redBg(yellow("Sending {} actions to server for player {}")), actions.length, playerId);
+        }
+
         transport.send(json);
     }
     
@@ -105,7 +111,7 @@ public class ServerAPI {
 
         @Override
         public void handlePlayerAssigned(PlayerAssignedMessage message) {
-            logger.info("Player assigned: {}", message.getPlayerId());
+            logger.info(green("Player assigned: {}"), message.getPlayerId());
             if (onPlayerAssigned != null) {
                 onPlayerAssigned.accept(message);
             }
@@ -121,7 +127,7 @@ public class ServerAPI {
         
         @Override
         public void handleNextTurn(NextTurnMessage message) {
-            logger.debug("Next turn for player: {}", message.getPlayerId());
+            logger.debug(green("Next turn for player: {}"), message.getPlayerId());
             if (onNextTurn != null) {
                 onNextTurn.accept(message);
             }
@@ -129,7 +135,7 @@ public class ServerAPI {
         
         @Override
         public void handleGameEnd(EndGameMessage message) {
-            logger.info("Game ended, winner: {}", message.getGameEnd() != null ? message.getGameEnd().winnerId() : "unknown");
+            logger.info(green("Game ended, winner: {}"), message.getGameEnd() != null ? message.getGameEnd().winnerId() : "unknown");
             if (onGameEnd != null) {
                 onGameEnd.accept(message);
             }
@@ -137,7 +143,7 @@ public class ServerAPI {
         
         @Override
         public void handleInvalidOperation(InvalidOperationMessage message) {
-            logger.warn("Invalid operation for player {}: {}", message.getPlayerId(), message.getReason());
+            logger.warn(yellow("Invalid operation for player {}: {}"), message.getPlayerId(), message.getReason());
             if (onInvalidOperation != null) {
                 onInvalidOperation.accept(message);
             }
@@ -145,7 +151,7 @@ public class ServerAPI {
         
         @Override
         public void handleError(Throwable error) {
-            logger.error("Message handling error", error);
+            logger.error(redBg("Message handling error"), error);
             if (onError != null) {
                 onError.accept(error);
             }

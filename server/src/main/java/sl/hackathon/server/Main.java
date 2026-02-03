@@ -7,10 +7,8 @@ import sl.hackathon.server.engine.GameEngineImpl;
 import sl.hackathon.server.maps.MapFactory;
 import sl.hackathon.server.orchestration.GameServer;
 import sl.hackathon.server.orchestration.ServerConfig;
-import sl.hackathon.server.util.Ansi;
 
-import static sl.hackathon.server.util.Ansi.red;
-import static sl.hackathon.server.util.Ansi.green;
+import static sl.hackathon.server.util.Ansi.*;
 
 /**
  * Main entry point for the game server application.
@@ -44,7 +42,7 @@ public class Main {
                     gameServer.stop();
                     logger.info("Server stopped successfully");
                 } catch (Exception e) {
-                    logger.error(Ansi.RED + "Error during server shutdown" + Ansi.RESET, e);
+                    logger.error(redBg("Error during server shutdown"), e);
                 }
             }));
             

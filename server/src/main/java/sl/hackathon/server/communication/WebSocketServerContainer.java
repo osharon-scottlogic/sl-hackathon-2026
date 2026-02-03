@@ -1,5 +1,6 @@
 package sl.hackathon.server.communication;
 
+import lombok.Getter;
 import org.glassfish.tyrus.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,9 +8,10 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static sl.hackathon.server.util.Ansi.*;
+
 /**
  * Manages the WebSocket server lifecycle using Tyrus embedded server.
- * 
  * Responsibilities:
  * - Start and stop the WebSocket server
  * - Register WebSocket endpoints
@@ -22,12 +24,16 @@ public class WebSocketServerContainer {
     private static final String DEFAULT_HOST = "localhost";
     private static final int DEFAULT_PORT = 8080;
     private static final String DEFAULT_CONTEXT_PATH = "/";
-    
+
+    @Getter
     private final String host;
+    @Getter
     private final int port;
+    @Getter
     private final String contextPath;
-    private Server server;
+    @Getter
     private volatile boolean running = false;
+    private Server server;
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
     
     /**
@@ -72,7 +78,7 @@ public class WebSocketServerContainer {
         this.port = port;
         this.contextPath = contextPath;
         
-        logger.info("WebSocket server container created: {}:{}{}", host, port, contextPath);
+        logger.info(green("WebSocket server container created: {}:{}{}"), host, port, contextPath);
     }
     
     /**
@@ -101,7 +107,7 @@ public class WebSocketServerContainer {
             server.start();
             running = true;
             
-            logger.info("WebSocket server started successfully at ws://{}:{}{}", host, port, contextPath);
+            logger.info(green("WebSocket server started successfully at ws://{}:{}{}"), host, port, contextPath);
             
             // Register shutdown hook for graceful shutdown on Ctrl+C
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -111,7 +117,7 @@ public class WebSocketServerContainer {
             
         } catch (Exception e) {
             running = false;
-            logger.error("Failed to start WebSocket server: {}", e.getMessage(), e);
+            logger.error(redBg(yellow("Failed to start WebSocket server: {}")), e.getMessage(), e);
             throw new RuntimeException("Failed to start WebSocket server", e);
         }
     }
@@ -140,46 +146,10 @@ public class WebSocketServerContainer {
             logger.info("WebSocket server stopped");
             
         } catch (Exception e) {
-            logger.error("Error stopping WebSocket server: {}", e.getMessage(), e);
+            logger.error(redBg(yellow("Error stopping WebSocket server: {}")), e.getMessage(), e);
         }
     }
-    
-    /**
-     * Checks if the server is currently running.
-     * 
-     * @return true if the server is running, false otherwise
-     */
-    public boolean isRunning() {
-        return running;
-    }
-    
-    /**
-     * Gets the configured host.
-     * 
-     * @return the host
-     */
-    public String getHost() {
-        return host;
-    }
-    
-    /**
-     * Gets the configured port.
-     * 
-     * @return the port
-     */
-    public int getPort() {
-        return port;
-    }
-    
-    /**
-     * Gets the configured context path.
-     * 
-     * @return the context path
-     */
-    public String getContextPath() {
-        return contextPath;
-    }
-    
+
     /**
      * Gets the WebSocket URL for clients to connect to.
      * 
