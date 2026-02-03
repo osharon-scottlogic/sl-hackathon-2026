@@ -162,7 +162,6 @@ public class GameServer {
             logger.info("WebSocket server stopped");
             
             logger.info("GameServer stopped successfully");
-            System.exit(0);
         } catch (Exception e) {
             logger.error(redBg("Error during GameServer shutdown"), e);
         }
