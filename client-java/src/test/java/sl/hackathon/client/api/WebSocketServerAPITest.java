@@ -290,7 +290,7 @@ class WebSocketServerAPITest {
                 GameStart statusUpdate = new GameStart(
                     new MapLayout(new Dimension(10, 10), new Position[0]), new Unit[0], 0
                 );
-                webSocketServerAPI.onGameStart.accept(new StartGameMessage(statusUpdate));
+                webSocketServerAPI.onGameStart.accept(new StartGameMessage(statusUpdate, null, 0L));
             }
         });
     }

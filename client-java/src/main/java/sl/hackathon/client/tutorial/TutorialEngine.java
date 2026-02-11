@@ -1,15 +1,21 @@
 package sl.hackathon.client.tutorial;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sl.hackathon.client.dtos.*;
 import sl.hackathon.client.messages.*;
 
 import java.util.*;
 
 import static sl.hackathon.client.dtos.UnitType.BASE;
+import static sl.hackathon.client.util.Ansi.green;
 
 public final class TutorialEngine {
+    private static final Logger logger = LoggerFactory.getLogger(TutorialEngine.class);
+
     private static final int DEFAULT_TIME_LIMIT_MS = 5000;
     private static final String SELF = "SELF";
+    private static final String TUTORIAL_OPPONENT = "TUTORIAL";
 
     private final TutorialDefinition definition;
     private final String assignedPlayerId;
@@ -28,6 +34,17 @@ public final class TutorialEngine {
         this.unitGenerator = new TutorialUnitGenerator(Objects.requireNonNull(random, "random"));
         this.startAt = System.currentTimeMillis();
         this.currentState = new GameState(seedInitialUnits(definition.initialUnits()), startAt);
+
+        TutorialEndCriteria end = definition.gameEnd();
+        logger.info(
+            green("Tutorial end criteria: type={}, playerId={}, minUnits={}, corner1={}, corner2={}, maxTurns={}"),
+            end != null ? end.type() : null,
+            end != null ? end.playerId() : null,
+            end != null ? end.minUnits() : null,
+            end != null ? end.corner1() : null,
+            end != null ? end.corner2() : null,
+            end != null ? end.maxTurns() : null
+        );
     }
 
     public StartGameMessage buildStartGameMessage() {
@@ -36,7 +53,7 @@ public final class TutorialEngine {
             currentState.units(),
             startAt
         );
-        return new StartGameMessage(gameStart);
+        return new StartGameMessage(gameStart, null, startAt);
     }
 
     public NextTurnMessage buildNextTurnMessage() {
@@ -67,9 +84,9 @@ public final class TutorialEngine {
 
         deltas.add(TutorialGameDeltaFactory.get(previousState, currentState));
 
-        boolean ended = hasTutorialEnded(currentState);
-        if (ended) {
-            messages.add(buildEndGameMessage());
+        TutorialOutcome outcome = evaluateTutorialOutcome(currentState);
+        if (outcome.ended()) {
+            messages.add(buildEndGameMessage(outcome.winnerId()));
         } else {
             messages.add(buildNextTurnMessage());
         }
@@ -119,13 +136,13 @@ public final class TutorialEngine {
         unitGenerator.spawnFoodAt(units, pos);
     }
 
-    private boolean hasTutorialEnded(GameState gameState) {
+    private TutorialOutcome evaluateTutorialOutcome(GameState gameState) {
         TutorialEndCriteria end = definition.gameEnd();
         if (end == null || end.type() == null) {
-            return false;
+            return TutorialOutcome.continueGame();
         }
 
-        return switch (end.type()) {
+        boolean goalAchieved = switch (end.type()) {
             case PLAYER_UNITS_AT_LEAST -> {
                 String targetPlayer = normalizeTargetPlayerId(end.playerId());
                 int minUnits = end.minUnits() != null ? end.minUnits() : 0;
@@ -138,6 +155,17 @@ public final class TutorialEngine {
                 yield isAnyOwnedUnitInRect(gameState, assignedPlayerId, c1, c2);
             }
         };
+
+        if (goalAchieved) {
+            return TutorialOutcome.ended(assignedPlayerId);
+        }
+
+        int maxTurns = end.maxTurns() != null ? end.maxTurns() : 0;
+        if (maxTurns > 0 && (currentTurnId + 1) >= maxTurns) {
+            return TutorialOutcome.ended(TUTORIAL_OPPONENT);
+        }
+
+        return TutorialOutcome.continueGame();
     }
 
     private String normalizeTargetPlayerId(String configured) {
@@ -183,14 +211,24 @@ public final class TutorialEngine {
         return false;
     }
 
-    private EndGameMessage buildEndGameMessage() {
+    private EndGameMessage buildEndGameMessage(String winnerId) {
         GameEnd gameEnd = new GameEnd(
             definition.map(),
             deltas.toArray(GameDelta[]::new),
-            assignedPlayerId,
+            winnerId,
             System.currentTimeMillis()
         );
         return new EndGameMessage(gameEnd);
+    }
+
+    private record TutorialOutcome(boolean ended, String winnerId) {
+        static TutorialOutcome continueGame() {
+            return new TutorialOutcome(false, null);
+        }
+
+        static TutorialOutcome ended(String winnerId) {
+            return new TutorialOutcome(true, winnerId);
+        }
     }
 
     public Unit findPlayerBase() {

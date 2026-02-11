@@ -12,9 +12,21 @@ import sl.hackathon.client.dtos.GameStart;
 @Getter
 public final class StartGameMessage extends Message {
     private final GameStart gameStart;
+    private final String arena;
+    private final long timestamp;
 
     @JsonCreator
+    public StartGameMessage(@JsonProperty("gameStart") GameStart gameStart,
+                            @JsonProperty("arena") String arena,
+                            @JsonProperty("timestamp") long timestamp) {
+        this.gameStart = gameStart;
+        this.arena = arena;
+        this.timestamp = timestamp;
+    }
+
     public StartGameMessage(@JsonProperty("gameStart") GameStart gameStart) {
         this.gameStart = gameStart;
+        this.arena = null;
+        this.timestamp = gameStart.timestamp();
     }
 }

@@ -34,7 +34,7 @@ class WebSocketServerAPIMessageSerializationTest {
     
     @Test
     void testJoinGameMessageSerialization() throws Exception {
-        StartGameMessage original = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{}, 0L));
+        StartGameMessage original = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{}, 0L), null, 0L);
         
         String json = MessageCodec.serialize(original);
         Message deserialized = MessageCodec.deserialize(json);

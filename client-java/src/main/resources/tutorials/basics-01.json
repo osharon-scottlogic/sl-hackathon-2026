@@ -1,13 +1,5 @@
 {
-  "map": {
-    "dimension": { "width": 10, "height": 10 },
-    "walls": []
-  },
-  "initialUnits": [
-    { "owner": "player1", "type": "BASE", "position": { "x": 1, "y": 1 } },
-    { "owner": "player1", "type": "PAWN", "position": { "x": 2, "y": 1 } },
-    { "owner": null, "type": "FOOD", "position": { "x": 3, "y": 1 } }
-  ],
+  "arena": ". . . . . . . . . .\n. b1 p1 f . . . . . .\n. . . . . . . . . .\n. . . . . . . . . .\n. . . . . . . . . .\n. . . . . . . . . .\n. . . . . . . . . .\n. . . . . . . . . .\n. . . . . . . . . .\n. . . . . . . . . .",
   "foodScarcity": 1.0,
   "foodSpawn": {
     "2": { "x": 5, "y": 5 }
@@ -15,6 +7,7 @@
   "gameEnd": {
     "type": "PLAYER_UNITS_AT_LEAST",
     "playerId": "player1",
-    "minUnits": 3
+    "minUnits": 3,
+    "maxTurns": 10
   }
 }

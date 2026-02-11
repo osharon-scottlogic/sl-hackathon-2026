@@ -1,24 +1,20 @@
-package sl.hackathon.client;
+package sl.hackathon.client.orchestrator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sl.hackathon.client.Bot;
 import sl.hackathon.client.api.ServerAPI;
 import sl.hackathon.client.dtos.*;
 import sl.hackathon.client.messages.*;
 import sl.hackathon.client.util.Ansi;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.concurrent.*;
 
-import static sl.hackathon.client.util.Ansi.redBg;
-import static sl.hackathon.client.util.Ansi.yellow;
+import static sl.hackathon.client.orchestrator.ArenaParser.parse;
 
 /**
  * Main client controller that orchestrates the game flow.
@@ -36,8 +32,6 @@ import static sl.hackathon.client.util.Ansi.yellow;
 public class Orchestrator {
     private static final Logger logger = LoggerFactory.getLogger(Orchestrator.class);
     private static final long TIMEOUT_BUFFER_MS = 1000L; // 1 second safety buffer
-    private static final String GAME_LOGS_DIR = "./game-logs/";
-    private static final ObjectMapper objectMapper = JsonMapper.builder().build();
 
     private ServerAPI serverAPI;
     private Bot bot;
@@ -119,6 +113,10 @@ public class Orchestrator {
         logger.info("Game started!");
         
         GameStart gameStart = message.getGameStart();
+        if (message.getArena() != null) {
+            gameStart = parse(message.getArena(), message.getTimestamp());
+        }
+
         if (gameStart != null) {
             // Extract map layout from status update
             this.mapLayout = gameStart.map();
@@ -183,8 +181,7 @@ public class Orchestrator {
      */
     private Action[] invokeBotWithTimeout(long timeLimitMs) throws TimeoutException, Exception {
         if (mapLayout == null) {
-            // Create a default map layout if not set
-            mapLayout = new MapLayout(new Dimension(10, 10), new Position[0]);
+            throw new Exception("Trying to invoke bot but there's no map");
         }
         
         Future<Action[]> future = botExecutor.submit(() -> 
@@ -236,7 +233,7 @@ public class Orchestrator {
             }
             
             // Write game log
-            writeGameLog(gameEnd);
+            GameLogWriter.write(gameEnd);
         }
         
         cleanup();
@@ -262,54 +259,6 @@ public class Orchestrator {
      */
     private void handleError(Throwable error) {
         logger.error(Ansi.RED + "Server API error" + Ansi.RESET, error);
-    }
-    
-    /**
-     * Writes game log to JSON file in the game-logs directory.
-     * File name includes timestamp for uniqueness.
-     * 
-     * @param gameEnd the final game status update
-     */
-    private void writeGameLog(GameEnd gameEnd) {
-        try {
-            // Create game-logs directory if it doesn't exist
-            File logsDir = new File(GAME_LOGS_DIR);
-            if (!logsDir.exists()) {
-                if (!logsDir.mkdirs()) {
-                    logger.error(redBg(yellow("failed to create {} folder")),GAME_LOGS_DIR);
-                }
-            }
-            
-            // Generate filename with timestamp
-            String timestamp = String.valueOf(System.currentTimeMillis());
-            String filename = writeLogFile(gameEnd, timestamp);
-
-            logger.info("Game log written to: {}", filename);
-            
-        } catch (IOException e) {
-            logger.warn("Failed to write game log", e);
-        }
-    }
-
-    private @NonNull String writeLogFile(GameEnd gameEnd, String timestamp) throws IOException {
-        String filename = GAME_LOGS_DIR + "game_" + timestamp + ".json";
-
-        // Extract all unique players from first state
-        java.util.Set<String> playerIds = new java.util.LinkedHashSet<>();
-        if (gameEnd.deltas() != null && gameEnd.deltas().length > 0) {
-            for (Unit unit : gameEnd.deltas()[0].addedOrModified()) {
-                if (unit.owner() != null) {
-                    playerIds.add(unit.owner());
-                }
-            }
-        }
-
-        // Write game log as JSON
-        try (FileWriter writer = new FileWriter(filename)) {
-            GameLog gameLog = new GameLog(playerIds.toArray(new String[0]),gameEnd.map().dimension(), gameEnd.map().walls(), gameEnd.winnerId(), timestamp, gameEnd.deltas());
-            writer.write(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(gameLog));
-        }
-        return filename;
     }
 
     /**

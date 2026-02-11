@@ -1,9 +1,10 @@
-package sl.hackathon.client;
+package sl.hackathon.client.orchestrator;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import sl.hackathon.client.Bot;
 import sl.hackathon.client.api.WebSocketServerAPI;
 import sl.hackathon.client.dtos.*;
 import sl.hackathon.client.messages.*;

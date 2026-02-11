@@ -56,6 +56,10 @@ public final class TutorialLoader {
             }
         }
 
+        if (def.gameEnd().maxTurns() != null && def.gameEnd().maxTurns() < 0) {
+            throw new IllegalArgumentException("gameEnd.maxTurns must be >= 0");
+        }
+
         if (def.foodScarcity() < 0.0f || def.foodScarcity() > 1.0f) {
             throw new IllegalArgumentException("foodScarcity must be in [0,1]");
         }

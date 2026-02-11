@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import sl.hackathon.client.api.ServerAPI;
 import sl.hackathon.client.api.TutorialServerApi;
 import sl.hackathon.client.api.WebSocketServerAPI;
+import sl.hackathon.client.orchestrator.Orchestrator;
 import sl.hackathon.client.util.Ansi;
 
 import java.util.concurrent.CountDownLatch;
