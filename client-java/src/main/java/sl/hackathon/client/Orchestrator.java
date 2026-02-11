@@ -115,7 +115,7 @@ public class Orchestrator {
      * 
      * @param message the start game message
      */
-    private void handleGameStart(StartGameMessage message) {
+    private void handleGameStart(@NonNull StartGameMessage message) {
         logger.info("Game started!");
         
         GameStart gameStart = message.getGameStart();

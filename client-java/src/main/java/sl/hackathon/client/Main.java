@@ -40,6 +40,7 @@ public class Main {
         
         try {
             // Instantiate ServerAPI
+            // Tutorial mode is selected via a URL prefixed with "tutorial" (canonical: tutorial:<tutorialId>)
             serverAPI = serverURL.startsWith("tutorial") ? new TutorialServerApi() : new WebSocketServerAPI();
             logger.info("ServerAPI created");
             

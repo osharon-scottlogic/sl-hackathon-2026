@@ -91,7 +91,6 @@ public class WebSocketServerAPI implements ServerAPI {
     /**
      * Gets current connection state.
      */
-    @Override
     public ConnectionState getState() {
         return switch (transport.getState()) {
             case DISCONNECTED -> ConnectionState.DISCONNECTED;
