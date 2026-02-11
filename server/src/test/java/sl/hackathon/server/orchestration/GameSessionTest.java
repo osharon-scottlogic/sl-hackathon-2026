@@ -50,7 +50,7 @@ class GameSessionTest {
         Position[] baseLocations = new Position[]{new Position(1, 1), new Position(9, 9)};
         MapConfig mapConfig = new MapConfig(dimension, walls, baseLocations);
         
-        gameParams = new GameParams(mapConfig, 5000L, 0.3f);
+        gameParams = new GameParams(mapConfig, 5000, 0.3f);
     }
     
     @Test
@@ -128,7 +128,7 @@ class GameSessionTest {
         when(mockEngine.getGameDeltaHistory()).thenReturn(List.of(new GameDelta(units, new int[0], state.startAt())));
 
         // Use very short timeout for quick test execution (3 turns * 200ms = 600ms max)
-        GameParams shortTimeoutParams = new GameParams(gameParams.mapConfig(), 200L, 0.3f);
+        GameParams shortTimeoutParams = new GameParams(gameParams.mapConfig(), 200, 0.3f);
         gameSession = new GameSession(mockEngine, mockRegistry, shortTimeoutParams);
         
         // Act
@@ -213,7 +213,7 @@ class GameSessionTest {
         GameState state = new GameState(units, System.currentTimeMillis());
         
         // Use very short timeout
-        GameParams shortTimeoutParams = new GameParams(gameParams.mapConfig(), 100L, 0.3f);
+        GameParams shortTimeoutParams = new GameParams(gameParams.mapConfig(), 100, 0.3f);
         
         when(mockEngine.initialize(shortTimeoutParams)).thenReturn(state);
         when(mockEngine.getGameState()).thenReturn(state);

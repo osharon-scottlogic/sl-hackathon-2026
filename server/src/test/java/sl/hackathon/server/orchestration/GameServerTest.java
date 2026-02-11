@@ -50,7 +50,7 @@ class GameServerTest {
         Position[] walls = new Position[]{new Position(5, 5)};
         Position[] baseLocations = new Position[]{new Position(1, 1), new Position(9, 9)};
         MapConfig mapConfig = new MapConfig(dimension, walls, baseLocations);
-        config = new ServerConfig(getAvailablePort(), mapConfig, 200L); // Use random port to avoid conflicts
+        config = new ServerConfig(getAvailablePort(), mapConfig, 200); // Use random port to avoid conflicts
         
         // Reset static state in WebSocketAdapter
         WebSocketAdapter.reset();
@@ -223,10 +223,10 @@ class GameServerTest {
         
         // Create a non-action message
         String playerId = "player1";
-        Message nonActionMessage = new JoinGameMessage(playerId);
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         
         // Act & Assert - should not throw exception
-        assertDoesNotThrow(() -> messageHandler.accept(playerId, nonActionMessage));
+        assertDoesNotThrow(() -> messageHandler.accept(playerId, message));
     }
     
 //    @Test

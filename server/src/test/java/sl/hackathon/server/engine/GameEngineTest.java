@@ -112,10 +112,10 @@ class GameEngineTest {
         boolean hasPlayerTwoBase = false;
         
         for (Unit unit : initialState.units()) {
-            if (unit.owner().equals("player-1") && unit.type() == UnitType.BASE) {
+            if ("player-1".equals(unit.owner()) && unit.type() == UnitType.BASE) {
                 hasPlayerOneBase = true;
             }
-            if (unit.owner().equals("player-2") && unit.type() == UnitType.BASE) {
+            if ("player-2".equals(unit.owner()) && unit.type() == UnitType.BASE) {
                 hasPlayerTwoBase = true;
             }
         }
@@ -135,10 +135,10 @@ class GameEngineTest {
         boolean hasPlayerTwoPawn = false;
         
         for (Unit unit : initialState.units()) {
-            if (unit.owner().equals("player-1") && unit.type() == UnitType.PAWN) {
+            if ("player-1".equals(unit.owner()) && unit.type() == UnitType.PAWN) {
                 hasPlayerOnePawn = true;
             }
-            if (unit.owner().equals("player-2") && unit.type() == UnitType.PAWN) {
+            if ("player-2".equals(unit.owner()) && unit.type() == UnitType.PAWN) {
                 hasPlayerTwoPawn = true;
             }
         }

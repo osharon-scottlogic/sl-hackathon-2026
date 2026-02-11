@@ -4,7 +4,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import sl.hackathon.client.api.ServerAPI;
+import sl.hackathon.client.api.WebSocketServerAPI;
 import sl.hackathon.client.dtos.*;
 import sl.hackathon.client.messages.*;
 
@@ -30,14 +30,14 @@ import static org.mockito.Mockito.*;
 class OrchestratorTest {
     
     private Orchestrator orchestrator;
-    private ServerAPI mockServerAPI;
+    private WebSocketServerAPI mockWebSocketServerAPI;
     private Bot mockBot;
     private String testPlayerId;
     
     @BeforeEach
     void setUp() {
         orchestrator = new Orchestrator();
-        mockServerAPI = mock(ServerAPI.class);
+        mockWebSocketServerAPI = mock(WebSocketServerAPI.class);
         mockBot = mock(Bot.class);
         testPlayerId = "player-1";
     }
@@ -62,18 +62,18 @@ class OrchestratorTest {
     
     @Test
     void testInit_successfulInitialization() {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         assertTrue(orchestrator.isInitialized(), "Orchestrator should be initialized");
         assertEquals(testPlayerId, orchestrator.getPlayerId(), "Player ID should match");
         
         // Verify callbacks were wired
-        verify(mockServerAPI).setOnGameStart(any());
-        verify(mockServerAPI).setOnPlayerAssigned(any());
-        verify(mockServerAPI).setOnNextTurn(any());
-        verify(mockServerAPI).setOnGameEnd(any());
-        verify(mockServerAPI).setOnInvalidOperation(any());
-        verify(mockServerAPI).setOnError(any());
+        verify(mockWebSocketServerAPI).setOnGameStart(any());
+        verify(mockWebSocketServerAPI).setOnPlayerAssigned(any());
+        verify(mockWebSocketServerAPI).setOnNextTurn(any());
+        verify(mockWebSocketServerAPI).setOnGameEnd(any());
+        verify(mockWebSocketServerAPI).setOnInvalidOperation(any());
+        verify(mockWebSocketServerAPI).setOnError(any());
     }
     
     @Test
@@ -87,7 +87,7 @@ class OrchestratorTest {
     @Test
     void testInit_nullBot_throwsException() {
         assertThrows(IllegalArgumentException.class, () -> 
-            orchestrator.init(mockServerAPI, null, testPlayerId),
+            orchestrator.init(mockWebSocketServerAPI, null, testPlayerId),
             "Should throw exception for null Bot"
         );
     }
@@ -95,7 +95,7 @@ class OrchestratorTest {
     @Test
     void testInit_nullPlayerId_throwsException() {
         assertThrows(IllegalArgumentException.class, () -> 
-            orchestrator.init(mockServerAPI, mockBot, null),
+            orchestrator.init(mockWebSocketServerAPI, mockBot, null),
             "Should throw exception for null playerId"
         );
     }
@@ -103,18 +103,18 @@ class OrchestratorTest {
     @Test
     void testInit_blankPlayerId_throwsException() {
         assertThrows(IllegalArgumentException.class, () -> 
-            orchestrator.init(mockServerAPI, mockBot, ""),
+            orchestrator.init(mockWebSocketServerAPI, mockBot, ""),
             "Should throw exception for blank playerId"
         );
     }
     
     @Test
     void testHandleGameStart_storesInitialState() {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         // Capture the onGameStart callback
         ArgumentCaptor<Consumer<StartGameMessage>> callbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnGameStart(callbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnGameStart(callbackCaptor.capture());
         Consumer<StartGameMessage> onGameStart = callbackCaptor.getValue();
         
         // Create start game message
@@ -137,7 +137,7 @@ class OrchestratorTest {
     
     @Test
     void testHandleNextTurn_invokesBot_sendsActions() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         // Set up map layout
         MapLayout testMap = new MapLayout(new Dimension(10, 10), new Position[0]);
@@ -145,7 +145,7 @@ class OrchestratorTest {
         
         // Capture callbacks
         ArgumentCaptor<Consumer<NextTurnMessage>> turnCallbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnNextTurn(turnCallbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnNextTurn(turnCallbackCaptor.capture());
         Consumer<NextTurnMessage> onNextTurn = turnCallbackCaptor.getValue();
         
         // Set up bot response
@@ -160,7 +160,7 @@ class OrchestratorTest {
             new Unit(2, testPlayerId, UnitType.PAWN, new Position(1, 1))
         };
         GameState turnState = new GameState(turnUnits, System.currentTimeMillis());
-        NextTurnMessage turnMsg = new NextTurnMessage(testPlayerId, turnState);
+        NextTurnMessage turnMsg = new NextTurnMessage(testPlayerId, turnState, 15000);
         
         // Trigger callback
         onNextTurn.accept(turnMsg);
@@ -172,21 +172,21 @@ class OrchestratorTest {
         verify(mockBot, timeout(1000)).handleState(eq(testPlayerId), eq(testMap), any(GameState.class), anyLong());
         
         // Verify actions were sent to server
-        verify(mockServerAPI, timeout(1000)).send(testPlayerId, expectedActions);
+        verify(mockWebSocketServerAPI, timeout(1000)).send(testPlayerId, expectedActions);
     }
     
     @Test
     void testHandleNextTurn_differentPlayer_ignored() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         // Capture callback
         ArgumentCaptor<Consumer<NextTurnMessage>> callbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnNextTurn(callbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnNextTurn(callbackCaptor.capture());
         Consumer<NextTurnMessage> onNextTurn = callbackCaptor.getValue();
         
         // Create next turn message for different player
         GameState turnState = new GameState(new Unit[0], System.currentTimeMillis());
-        NextTurnMessage turnMsg = new NextTurnMessage("player-2", turnState);
+        NextTurnMessage turnMsg = new NextTurnMessage("player-2", turnState, 15000);
         
         // Trigger callback
         onNextTurn.accept(turnMsg);
@@ -196,17 +196,17 @@ class OrchestratorTest {
         
         // Verify bot was NOT invoked
         verify(mockBot, never()).handleState(any(), any(), any(), anyLong());
-        verify(mockServerAPI, never()).send(any(), any());
+        verify(mockWebSocketServerAPI, never()).send(any(), any());
     }
     
     @Test
     void testHandleNextTurn_botTimeout_sendsFallback() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         orchestrator.setMapLayout(new MapLayout(new Dimension(10, 10), new Position[0]));
         
         // Capture callback
         ArgumentCaptor<Consumer<NextTurnMessage>> callbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnNextTurn(callbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnNextTurn(callbackCaptor.capture());
         Consumer<NextTurnMessage> onNextTurn = callbackCaptor.getValue();
         
         // Set up bot to timeout (sleep longer than allowed)
@@ -218,14 +218,14 @@ class OrchestratorTest {
         
         // Create next turn message
         GameState turnState = new GameState(new Unit[0], System.currentTimeMillis());
-        NextTurnMessage turnMsg = new NextTurnMessage(testPlayerId, turnState);
+        NextTurnMessage turnMsg = new NextTurnMessage(testPlayerId, turnState, 15000);
         
         // Trigger callback
         onNextTurn.accept(turnMsg);
         
         // Verify fallback actions (empty array) were sent
         ArgumentCaptor<Action[]> actionsCaptor = ArgumentCaptor.forClass(Action[].class);
-        verify(mockServerAPI, timeout(6000)).send(eq(testPlayerId), actionsCaptor.capture());
+        verify(mockWebSocketServerAPI, timeout(6000)).send(eq(testPlayerId), actionsCaptor.capture());
         
         Action[] sentActions = actionsCaptor.getValue();
         assertEquals(0, sentActions.length, "Should send empty fallback actions on timeout");
@@ -233,12 +233,12 @@ class OrchestratorTest {
     
     @Test
     void testHandleNextTurn_botException_sendsFallback() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         orchestrator.setMapLayout(new MapLayout(new Dimension(10, 10), new Position[0]));
         
         // Capture callback
         ArgumentCaptor<Consumer<NextTurnMessage>> callbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnNextTurn(callbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnNextTurn(callbackCaptor.capture());
         Consumer<NextTurnMessage> onNextTurn = callbackCaptor.getValue();
         
         // Set up bot to throw exception
@@ -247,14 +247,14 @@ class OrchestratorTest {
         
         // Create next turn message
         GameState turnState = new GameState(new Unit[0], System.currentTimeMillis());
-        NextTurnMessage turnMsg = new NextTurnMessage(testPlayerId, turnState);
+        NextTurnMessage turnMsg = new NextTurnMessage(testPlayerId, turnState, 15000);
         
         // Trigger callback
         onNextTurn.accept(turnMsg);
         
         // Verify fallback actions were sent
         ArgumentCaptor<Action[]> actionsCaptor = ArgumentCaptor.forClass(Action[].class);
-        verify(mockServerAPI, timeout(2000)).send(eq(testPlayerId), actionsCaptor.capture());
+        verify(mockWebSocketServerAPI, timeout(2000)).send(eq(testPlayerId), actionsCaptor.capture());
         
         Action[] sentActions = actionsCaptor.getValue();
         assertEquals(0, sentActions.length, "Should send empty fallback actions on bot error");
@@ -262,17 +262,17 @@ class OrchestratorTest {
     
 //    @Test
     void testHandleGameEnd_writesLogFile() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         // Capture callback
         ArgumentCaptor<Consumer<EndGameMessage>> callbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnGameEnd(callbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnGameEnd(callbackCaptor.capture());
         Consumer<EndGameMessage> onGameEnd = callbackCaptor.getValue();
         
         // Create end game message
         long now = System.currentTimeMillis();
         MapLayout map = new MapLayout(new Dimension(10, 10), new Position[0]);
-        GameEnd gameEnd = new GameEnd(map, new Unit[0], new GameDelta[0], testPlayerId, now);
+        GameEnd gameEnd = new GameEnd(map, new GameDelta[0], testPlayerId, now);
         EndGameMessage endMsg = new EndGameMessage(gameEnd);
         
         // Trigger callback
@@ -300,17 +300,17 @@ class OrchestratorTest {
     
 //    @Test
     void testHandleGameEnd_victory_logsCorrectly() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         // Capture callback
         ArgumentCaptor<Consumer<EndGameMessage>> callbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnGameEnd(callbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnGameEnd(callbackCaptor.capture());
         Consumer<EndGameMessage> onGameEnd = callbackCaptor.getValue();
         
         // Create end game message with this player as winner
         long now = System.currentTimeMillis();
         MapLayout map = new MapLayout(new Dimension(10, 10), new Position[0]);
-        EndGameMessage endMsg = new EndGameMessage(new GameEnd(map, new Unit[0], new GameDelta[0], testPlayerId, now));
+        EndGameMessage endMsg = new EndGameMessage(new GameEnd(map, new GameDelta[0], testPlayerId, now));
         
         // Trigger callback (should log victory)
         assertDoesNotThrow(() -> onGameEnd.accept(endMsg));
@@ -318,17 +318,17 @@ class OrchestratorTest {
     
 //    @Test
     void testHandleGameEnd_defeat_logsCorrectly() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         // Capture callback
         ArgumentCaptor<Consumer<EndGameMessage>> callbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnGameEnd(callbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnGameEnd(callbackCaptor.capture());
         Consumer<EndGameMessage> onGameEnd = callbackCaptor.getValue();
         
         // Create end game message with different player as winner
         long now = System.currentTimeMillis();
         MapLayout map = new MapLayout(new Dimension(10, 10), new Position[0]);
-        EndGameMessage endMsg = new EndGameMessage(new GameEnd(map, new Unit[0], new GameDelta[0], "player-2", now));
+        EndGameMessage endMsg = new EndGameMessage(new GameEnd(map, new GameDelta[0], "player-2", now));
         
         // Trigger callback (should log defeat)
         assertDoesNotThrow(() -> onGameEnd.accept(endMsg));
@@ -336,11 +336,11 @@ class OrchestratorTest {
     
     @Test
     void testHandleInvalidOperation_logsWarning() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         // Capture callback
         ArgumentCaptor<Consumer<InvalidOperationMessage>> callbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnInvalidOperation(callbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnInvalidOperation(callbackCaptor.capture());
         Consumer<InvalidOperationMessage> onInvalidOp = callbackCaptor.getValue();
         
         // Create invalid operation message
@@ -352,11 +352,11 @@ class OrchestratorTest {
     
     @Test
     void testHandleError_logsError() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         // Capture callback
         ArgumentCaptor<Consumer<Throwable>> callbackCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(mockServerAPI).setOnError(callbackCaptor.capture());
+        verify(mockWebSocketServerAPI).setOnError(callbackCaptor.capture());
         Consumer<Throwable> onError = callbackCaptor.getValue();
         
         // Create error
@@ -368,7 +368,7 @@ class OrchestratorTest {
     
     @Test
     void testShutdown_cleansUpResources() {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockWebSocketServerAPI, mockBot, testPlayerId);
         
         // Shutdown should not throw
         assertDoesNotThrow(() -> orchestrator.shutdown());

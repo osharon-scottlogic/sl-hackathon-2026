@@ -222,7 +222,7 @@ public class GameSession implements Runnable {
         // Broadcast NextTurnMessage to all players
         GameState currentState = gameEngine.getGameState();
         for (String playerId : gameEngine.getActivePlayers()) {
-            NextTurnMessage turnMessage = new NextTurnMessage(playerId, currentState);
+            NextTurnMessage turnMessage = new NextTurnMessage(playerId, currentState, gameParams.turnTimeLimit());
             try {
                 clientRegistry.send(playerId, turnMessage);
             } catch (Exception e) {

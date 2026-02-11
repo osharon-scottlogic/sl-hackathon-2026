@@ -79,8 +79,8 @@ class ClientHandlerTest {
     void testSendMessageWhenConnectionClosed() throws IOException {
         // Test that sending when connection is closed doesn't throw exception
         when(mockSession.isOpen()).thenReturn(false);
-        
-        JoinGameMessage message = new JoinGameMessage("player-1");
+
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         clientHandler.send(message);
         
         // Should not attempt to send
@@ -90,7 +90,7 @@ class ClientHandlerTest {
     @Test
     void testSendMessageHandlesIOException() throws IOException {
         // Test that IOException during send is caught and logged
-        JoinGameMessage message = new JoinGameMessage("player-1");
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         doThrow(new IOException("Network error")).when(mockRemote).sendText(anyString());
         
         // Should not throw exception
@@ -100,50 +100,12 @@ class ClientHandlerTest {
     }
 
     @Test
-    void testSendMessageObject() throws IOException {
-        // Test sending a Message object
-        JoinGameMessage message = new JoinGameMessage("player-1");
-        
-        clientHandler.send(message);
-        
-        ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
-        verify(mockRemote, times(1)).sendText(jsonCaptor.capture());
-        
-        String sentJson = jsonCaptor.getValue();
-        assertNotNull(sentJson);
-        assertTrue(sentJson.contains("\"type\":\"JOIN_GAME\""));
-        assertTrue(sentJson.contains("\"playerId\":\"player-1\""));
-    }
-
-    @Test
     void testSendMessageObjectWithNull() {
         // Test that sending null Message throws exception
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             clientHandler.send((Message) null);
         });
         assertEquals("Message cannot be null", exception.getMessage());
-    }
-
-    @Test
-    void testHandleMessageDeserializesAndInvokesCallback() {
-        // Test that handleMessage deserializes and invokes callback
-        AtomicReference<String> receivedClientId = new AtomicReference<>();
-        AtomicReference<Message> receivedMessage = new AtomicReference<>();
-        
-        BiConsumer<String, Message> callback = (clientId, message) -> {
-            receivedClientId.set(clientId);
-            receivedMessage.set(message);
-        };
-        
-        clientHandler.setMessageCallback(callback);
-        
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"player-1\"}";
-        clientHandler.handleMessage(json);
-        
-        assertEquals(clientHandler.getClientId(), receivedClientId.get());
-        assertNotNull(receivedMessage.get());
-        assertInstanceOf(JoinGameMessage.class, receivedMessage.get());
-        assertEquals("player-1", ((JoinGameMessage) receivedMessage.get()).getPlayerId());
     }
 
     @Test
@@ -199,7 +161,7 @@ class ClientHandlerTest {
     @Test
     void testHandleMessageWithNoCallback() {
         // Test that handleMessage works when no callback is registered
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"player-1\"}";
+        String json = "{\"type\":\"START_GAME\",\"gameStart\":{\"map\":{\"dimension\":{\"width\":10,\"height\":10}},\"initialUnits\":[],\"timestamp\":123456789}}";
         
         // Should not throw exception
         assertDoesNotThrow(() -> clientHandler.handleMessage(json));
@@ -216,9 +178,9 @@ class ClientHandlerTest {
         
         clientHandler.setMessageCallback(callback);
         
-        // Test JoinGameMessage
-        String joinJson = "{\"type\":\"JOIN_GAME\",\"playerId\":\"player-1\"}";
-        clientHandler.handleMessage(joinJson);
+        // Test StartGameMessage
+        String startJson = "{\"type\":\"START_GAME\",\"gameStart\":{\"map\":{\"dimension\":{\"width\":10,\"height\":10}},\"initialUnits\":[],\"timestamp\":123456789}}";
+        clientHandler.handleMessage(startJson);
         
         // Test ActionMessage
         String actionJson = "{\"type\":\"ACTION\",\"playerId\":\"player-1\",\"actions\":[]}";
@@ -271,7 +233,7 @@ class ClientHandlerTest {
         
         clientHandler.setMessageCallback(callback);
         
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"player-1\"}";
+        String json = "{\"type\":\"START_GAME\",\"gameStart\":{\"map\":{\"dimension\":{\"width\":10,\"height\":10}},\"initialUnits\":[],\"timestamp\":123456789}}";
         clientHandler.handleMessage(json);
         
         assertEquals(expectedClientId, receivedClientId.get());
@@ -282,7 +244,11 @@ class ClientHandlerTest {
         // Test that send() synchronizes access to session (prevent concurrent sends)
         // This is a behavioral test to ensure thread safety
         
-        JoinGameMessage message = new JoinGameMessage("player-1");
+        StartGameMessage message = new StartGameMessage(new GameStart(
+            new MapLayout(new Dimension(10, 10), new Position[]{}),
+            new Unit[0],
+            123456789L
+        ));
         
         // Create a handler and send a message
         clientHandler.send(message);

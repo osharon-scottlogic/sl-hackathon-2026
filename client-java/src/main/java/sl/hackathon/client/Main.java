@@ -3,6 +3,8 @@ package sl.hackathon.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.client.api.ServerAPI;
+import sl.hackathon.client.api.TutorialServerApi;
+import sl.hackathon.client.api.WebSocketServerAPI;
 import sl.hackathon.client.util.Ansi;
 
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +40,7 @@ public class Main {
         
         try {
             // Instantiate ServerAPI
-            serverAPI = new ServerAPI();
+            serverAPI = serverURL.startsWith("tutorial") ? new TutorialServerApi() : new WebSocketServerAPI();
             logger.info("ServerAPI created");
             
             // Instantiate Bot (using StrategicBot as default)
@@ -62,7 +64,7 @@ public class Main {
             CountDownLatch shutdownLatch = new CountDownLatch(1);
             
             // Store references for shutdown hook
-            final ServerAPI finalServerAPI = serverAPI;
+            final ServerAPI finalWebSocketServerAPI = serverAPI;
             final Orchestrator finalOrchestrator = orchestrator;
             
             // Add shutdown hook for graceful termination
@@ -70,7 +72,7 @@ public class Main {
                 logger.info("Shutdown signal received, cleaning up...");
                 try {
                     finalOrchestrator.shutdown();
-                    finalServerAPI.close();
+                    finalWebSocketServerAPI.close();
                     logger.info("Client shutdown complete");
                 } catch (Exception e) {
                     logger.error(Ansi.RED + "Error during shutdown" + Ansi.RESET, e);

@@ -125,7 +125,7 @@ public class UnitGenerator {
                 // Generate unique food ID
                 Unit food = new Unit(
                         nextId(),
-                        "none",
+                        null,
                         UnitType.FOOD,
                         foodPos
                 );

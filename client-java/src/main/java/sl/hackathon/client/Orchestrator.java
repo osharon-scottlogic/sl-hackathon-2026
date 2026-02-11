@@ -3,6 +3,7 @@ package sl.hackathon.client;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.concurrent.*;
+
+import static sl.hackathon.client.util.Ansi.redBg;
+import static sl.hackathon.client.util.Ansi.yellow;
 
 /**
  * Main client controller that orchestrates the game flow.
@@ -149,8 +153,7 @@ public class Orchestrator {
         }
         
         // Calculate remaining time with buffer
-        long timeLimitMs = 5000L; // Default timeout; should come from message in real implementation
-        long botTimeLimit = Math.max(0, timeLimitMs - TIMEOUT_BUFFER_MS);
+        long botTimeLimit = Math.max(0, message.getTimeLimitMs() - TIMEOUT_BUFFER_MS);
         
         try {
             // Invoke bot with timeout enforcement
@@ -272,7 +275,9 @@ public class Orchestrator {
             // Create game-logs directory if it doesn't exist
             File logsDir = new File(GAME_LOGS_DIR);
             if (!logsDir.exists()) {
-                logsDir.mkdirs();
+                if (!logsDir.mkdirs()) {
+                    logger.error(redBg(yellow("failed to create {} folder")),GAME_LOGS_DIR);
+                }
             }
             
             // Generate filename with timestamp
@@ -286,17 +291,15 @@ public class Orchestrator {
         }
     }
 
-    private String writeLogFile(GameEnd gameEnd, String timestamp) throws IOException {
+    private @NonNull String writeLogFile(GameEnd gameEnd, String timestamp) throws IOException {
         String filename = GAME_LOGS_DIR + "game_" + timestamp + ".json";
 
         // Extract all unique players from first state
         java.util.Set<String> playerIds = new java.util.LinkedHashSet<>();
         if (gameEnd.deltas() != null && gameEnd.deltas().length > 0) {
-            if (gameEnd.initialUnits() != null) {
-                for (Unit unit : gameEnd.initialUnits()) {
-                    if (unit.owner() != null && !unit.owner().equals("none")) {
-                        playerIds.add(unit.owner());
-                    }
+            for (Unit unit : gameEnd.deltas()[0].addedOrModified()) {
+                if (unit.owner() != null) {
+                    playerIds.add(unit.owner());
                 }
             }
         }

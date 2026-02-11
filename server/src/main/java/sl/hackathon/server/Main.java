@@ -19,7 +19,7 @@ public class Main {
 
     // Default server configuration
     private static final int DEFAULT_PORT = 8080;
-    private static final long DEFAULT_TURN_TIME_LIMIT = 15000L; // 15 seconds
+    private static final int DEFAULT_TURN_TIME_LIMIT = 15000; // 15 seconds
 
     public static void main(String[] args) {
         logger.info(green("Starting Game Server..."));

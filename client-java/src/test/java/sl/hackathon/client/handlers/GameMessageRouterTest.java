@@ -81,7 +81,7 @@ class GameMessageRouterTest {
         });
         
         GameState state = new GameState(new Unit[0], System.currentTimeMillis());
-        NextTurnMessage message = new NextTurnMessage("player1", state);
+        NextTurnMessage message = new NextTurnMessage("player1", state, 15000);
         
         router.routeMessage(message);
         
@@ -98,7 +98,7 @@ class GameMessageRouterTest {
         
         long now = System.currentTimeMillis();
         MapLayout mapLayout = new MapLayout(new Dimension(10, 10), new Position[0]);
-        GameEnd gameEnd = new GameEnd(mapLayout, new Unit[0], new GameDelta[0], "winner1", now);
+        GameEnd gameEnd = new GameEnd(mapLayout, new GameDelta[0], "winner1", now);
         EndGameMessage message = new EndGameMessage(gameEnd);
         
         router.routeMessage(message);
@@ -208,8 +208,8 @@ class GameMessageRouterTest {
         GameStart gameStart = new GameStart(mapLayout, new Unit[0], now);
         
         router.routeMessage(new StartGameMessage(gameStart));
-        router.routeMessage(new NextTurnMessage("p1", state));
-        router.routeMessage(new EndGameMessage(new GameEnd(mapLayout, new Unit[0], new GameDelta[0], "p1", now)));
+        router.routeMessage(new NextTurnMessage("p1", state, 15000));
+        router.routeMessage(new EndGameMessage(new GameEnd(mapLayout, new GameDelta[0], "p1", now)));
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertEquals(1, testHandler.startGameCount.get());

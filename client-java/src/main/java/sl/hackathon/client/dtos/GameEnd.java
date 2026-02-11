@@ -6,7 +6,6 @@ package sl.hackathon.client.dtos;
  */
 public record GameEnd(
     MapLayout map,
-    Unit[] initialUnits,
     GameDelta[] deltas,
     String winnerId,
     long timestamp

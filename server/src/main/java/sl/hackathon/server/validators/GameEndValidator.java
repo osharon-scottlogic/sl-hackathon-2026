@@ -25,7 +25,7 @@ public class GameEndValidator {
         // Game ends if a player has no BASE or doesn't have any PAWN units.
         Map<String, Map<UnitType, Integer>> playerUnitCounts = new HashMap<>();
         for (Unit unit : gameState.units()) {
-            if (unit == null || unit.owner() == null || unit.owner().equals("none") || unit.type() == null) {
+            if (unit == null || unit.owner() == null || unit.type() == null) {
                 continue;
             }
             if (!playerUnitCounts.containsKey(unit.owner())) {
@@ -61,7 +61,7 @@ public class GameEndValidator {
         // Game ends if a player has no BASE or doesn't have any PAWN units.
         Map<String, Map<UnitType, Integer>> playerUnitCounts = new HashMap<>();
         for (Unit unit : gameState.units()) {
-            if (unit == null || unit.owner() == null || unit.owner().equals("none") || unit.type() == null) {
+            if (unit == null || unit.owner() == null || unit.type() == null) {
                 continue;
             }
 

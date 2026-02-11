@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for ServerConfig.
- * 
  * Test coverage:
  * 1. Constructor validation
  * 2. Port validation (bounds)
@@ -31,12 +30,12 @@ class ServerConfigTest {
     @Test
     void constructor_WithValidParameters_CreatesConfig() {
         // Act
-        ServerConfig config = new ServerConfig(8080, validMapConfig, 15000L);
+        ServerConfig config = new ServerConfig(8080, validMapConfig, 15000);
         
         // Assert
         assertEquals(8080, config.port());
         assertEquals(validMapConfig, config.mapConfig());
-        assertEquals(15000L, config.turnTimeLimit());
+        assertEquals(15000, config.turnTimeLimit());
     }
     
     @Test
@@ -46,7 +45,7 @@ class ServerConfigTest {
         
         // Assert
         assertEquals(8080, config.port()); // Default port
-        assertEquals(15000L, config.turnTimeLimit()); // Default turn time limit
+        assertEquals(15000, config.turnTimeLimit()); // Default turn time limit
         assertEquals(validMapConfig, config.mapConfig());
     }
     
@@ -54,20 +53,20 @@ class ServerConfigTest {
     void validate_WithPortBelowMinimum_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(1023, validMapConfig, 15000L));
+            new ServerConfig(1023, validMapConfig, 15000));
     }
     
     @Test
     void validate_WithPortAboveMaximum_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(65536, validMapConfig, 15000L));
+            new ServerConfig(65536, validMapConfig, 15000));
     }
     
     @Test
     void validate_WithMinimumValidPort_Succeeds() {
         // Act
-        ServerConfig config = new ServerConfig(1024, validMapConfig, 15000L);
+        ServerConfig config = new ServerConfig(1024, validMapConfig, 15000);
         
         // Assert
         assertEquals(1024, config.port());
@@ -76,7 +75,7 @@ class ServerConfigTest {
     @Test
     void validate_WithMaximumValidPort_Succeeds() {
         // Act
-        ServerConfig config = new ServerConfig(65535, validMapConfig, 15000L);
+        ServerConfig config = new ServerConfig(65535, validMapConfig, 15000);
         
         // Assert
         assertEquals(65535, config.port());
@@ -86,27 +85,27 @@ class ServerConfigTest {
     void validate_WithNullMapConfig_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(8080, null, 15000L));
+            new ServerConfig(8080, null, 15000));
     }
     
     @Test
     void validate_WithZeroTurnTimeLimit_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(8080, validMapConfig, 0L));
+            new ServerConfig(8080, validMapConfig, 0));
     }
     
     @Test
     void validate_WithNegativeTurnTimeLimit_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(8080, validMapConfig, -1000L));
+            new ServerConfig(8080, validMapConfig, -1000));
     }
     
     @Test
     void toString_ReturnsConfigDetails() {
         // Arrange
-        ServerConfig config = new ServerConfig(8080, validMapConfig, 15000L);
+        ServerConfig config = new ServerConfig(8080, validMapConfig, 15000);
         
         // Act
         String result = config.toString();

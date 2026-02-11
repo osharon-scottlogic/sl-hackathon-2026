@@ -14,12 +14,15 @@ import lombok.ToString;
 public final class NextTurnMessage extends Message {
     private final String playerId;
     private final GameState gameState;
+    private final int timeLimitMs;
 
     @JsonCreator
     public NextTurnMessage(
             @JsonProperty("playerId") String playerId,
-            @JsonProperty("gameState") GameState gameState) {
+            @JsonProperty("gameState") GameState gameState,
+            @JsonProperty("timeLimitMs") int timeLimitMs) {
         this.playerId = playerId;
         this.gameState = gameState;
+        this.timeLimitMs = timeLimitMs;
     }
 }

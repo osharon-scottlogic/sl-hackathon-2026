@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Verifies that all message types can be properly serialized to JSON
  * and deserialized back to their original form.
  */
-class ServerAPIMessageSerializationTest {
+class WebSocketServerAPIMessageSerializationTest {
     
     @Test
     void testActionMessageSerialization() throws Exception {
@@ -34,14 +34,14 @@ class ServerAPIMessageSerializationTest {
     
     @Test
     void testJoinGameMessageSerialization() throws Exception {
-        JoinGameMessage original = new JoinGameMessage("player1");
+        StartGameMessage original = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{}, 0L));
         
         String json = MessageCodec.serialize(original);
         Message deserialized = MessageCodec.deserialize(json);
         
-        assertInstanceOf(JoinGameMessage.class, deserialized);
-        JoinGameMessage result = (JoinGameMessage) deserialized;
-        assertEquals("player1", result.getPlayerId());
+        assertInstanceOf(StartGameMessage.class, deserialized);
+        StartGameMessage result = (StartGameMessage) deserialized;
+        assertEquals(10, result.getGameStart().map().dimension().width());
     }
     
     @Test
@@ -79,7 +79,7 @@ class ServerAPIMessageSerializationTest {
             new Unit[]{new Unit(1, "p2", UnitType.PAWN, new Position(3, 3))},
             System.currentTimeMillis()
         );
-        NextTurnMessage original = new NextTurnMessage("player2", state);
+        NextTurnMessage original = new NextTurnMessage("player2", state, 15000);
         
         String json = MessageCodec.serialize(original);
         Message deserialized = MessageCodec.deserialize(json);
@@ -103,7 +103,6 @@ class ServerAPIMessageSerializationTest {
         
         GameEnd gameEnd = new GameEnd(
             mapLayout,
-            initialUnits,
             deltas,
             "winner1",
             System.currentTimeMillis()

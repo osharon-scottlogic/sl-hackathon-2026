@@ -1,13 +1,15 @@
 package sl.hackathon.server.communication;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import sl.hackathon.server.dtos.JoinGameMessage;
-import sl.hackathon.server.dtos.Message;
+import sl.hackathon.server.dtos.*;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,6 +23,8 @@ import static org.mockito.Mockito.*;
  * Tests endpoint lifecycle, message dispatch, and callback invocation.
  */
 class WebSocketAdapterTest {
+
+    private static final ObjectMapper objectMapper = JsonMapper.builder().build();
 
     private WebSocketAdapter adapter;
     private ClientRegistry clientRegistry;
@@ -156,22 +160,22 @@ class WebSocketAdapterTest {
     // ===== MESSAGE HANDLING TESTS =====
 
     @Test
-    void testOnMessageForwardsToClientHandler() {
+    void testOnMessageForwardsToClientHandler() throws JsonProcessingException {
         adapter.onOpen(mockSession);
-        
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"test-player\"}";
+
+        String json = objectMapper.writeValueAsString(new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{}, 0L)));
         adapter.onMessage(json, mockSession);
         
         // Verify message callback was invoked
         assertEquals(1, messageCallbackCount.get());
         assertNotNull(lastReceivedMessage.get());
-        assertInstanceOf(JoinGameMessage.class, lastReceivedMessage.get());
+        assertInstanceOf(StartGameMessage.class, lastReceivedMessage.get());
     }
 
     @Test
     void testOnMessageBeforeConnectionIgnored() {
         // Call onMessage without onOpen
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"test-player\"}";
+        String json = "{\"type\":\"START_GAME\",\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"initialUnits\":[],\"timestamp\":1000}";
         
         // Should not throw exception
         assertDoesNotThrow(() -> adapter.onMessage(json, mockSession));
@@ -192,7 +196,7 @@ class WebSocketAdapterTest {
 
     @Test
     void testOnMessageWithNullHandlerDoesNotCrash() {
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"test-player\"}";
+        String json = "{\"type\":\"START_GAME\",\"map\":{\"dimension\":{\"width\":10,\"height\":10},\"walls\":[]},\"initialUnits\":[],\"timestamp\":1000}";
         
         // Should not throw exception when handler is null
         assertDoesNotThrow(() -> adapter.onMessage(json, mockSession));
@@ -288,7 +292,7 @@ class WebSocketAdapterTest {
         
         adapter.onOpen(mockSession);
         
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"test-player\"}";
+        String json = "{\"type\":\"START_GAME\",\"playerId\":\"test-player\"}";
         adapter.onMessage(json, mockSession);
         
         CloseReason closeReason = new CloseReason(
@@ -319,14 +323,14 @@ class WebSocketAdapterTest {
     // ===== INTEGRATION TESTS =====
 
     @Test
-    void testFullLifecycle() {
+    void testFullLifecycle() throws JsonProcessingException {
         // Connect
         adapter.onOpen(mockSession);
         assertEquals(1, connectCallbackCount.get());
         assertEquals("player-1", lastConnectedPlayerId.get());
         
         // Send message
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"test-player\"}";
+        String json = objectMapper.writeValueAsString(new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{}, 0L)));
         adapter.onMessage(json, mockSession);
         assertEquals(1, messageCallbackCount.get());
         
@@ -344,7 +348,7 @@ class WebSocketAdapterTest {
     }
 
     @Test
-    void testTwoClientFullLifecycle() {
+    void testTwoClientFullLifecycle() throws JsonProcessingException {
         Session mockSession2 = mock(Session.class);
         RemoteEndpoint.Basic mockRemote2 = mock(RemoteEndpoint.Basic.class);
         when(mockSession2.getBasicRemote()).thenReturn(mockRemote2);
@@ -360,7 +364,7 @@ class WebSocketAdapterTest {
         assertTrue(clientRegistry.isReady());
         
         // Both send messages
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"test-player\"}";
+        String json = objectMapper.writeValueAsString(new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{}, 0L)));
         adapter.onMessage(json, mockSession);
         adapter2.onMessage(json, mockSession2);
         

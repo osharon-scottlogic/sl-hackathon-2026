@@ -11,11 +11,11 @@ import sl.hackathon.server.dtos.MapConfig;
  * - Validate configuration values
  * - Provide default values for optional parameters
  */
-public record ServerConfig(int port, MapConfig mapConfig, long turnTimeLimit) {
+public record ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit) {
     private static final int MIN_PORT = 1024;
     private static final int MAX_PORT = 65535;
     private static final int DEFAULT_PORT = 8080;
-    private static final long DEFAULT_TURN_TIME_LIMIT = 15000L; // 15 seconds
+    private static final int DEFAULT_TURN_TIME_LIMIT = 15000; // 15 seconds
 
     /**
      * Creates a ServerConfig with specified parameters.
@@ -25,7 +25,7 @@ public record ServerConfig(int port, MapConfig mapConfig, long turnTimeLimit) {
      * @param turnTimeLimit the turn time limit in milliseconds
      * @throws IllegalArgumentException if validation fails
      */
-    public ServerConfig(int port, MapConfig mapConfig, long turnTimeLimit) {
+    public ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit) {
         this.port = port;
         this.mapConfig = mapConfig;
         this.turnTimeLimit = turnTimeLimit;

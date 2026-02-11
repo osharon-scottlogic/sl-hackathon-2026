@@ -1,11 +1,10 @@
-package sl.hackathon.client.transport;
+package sl.hackathon.client.api;
 
 import jakarta.websocket.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sl.hackathon.client.api.TransportState;
 
 import java.io.IOException;
 import java.net.URI;

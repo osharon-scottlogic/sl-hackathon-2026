@@ -20,26 +20,26 @@ import static org.junit.jupiter.api.Assertions.*;
  * - Error handling
  * - State management
  */
-class ServerAPITest {
+class WebSocketServerAPITest {
     
-    private ServerAPI serverAPI;
+    private WebSocketServerAPI webSocketServerAPI;
     
     @BeforeEach
     void setUp() {
-        serverAPI = new ServerAPI();
+        webSocketServerAPI = new WebSocketServerAPI();
     }
     
     @AfterEach
     void tearDown() {
-        if (serverAPI.isConnected()) {
-            serverAPI.close();
+        if (webSocketServerAPI.isConnected()) {
+            webSocketServerAPI.close();
         }
     }
     
     @Test
     void testInitialState() {
-        assertEquals(ServerAPI.ConnectionState.DISCONNECTED, serverAPI.getState());
-        assertFalse(serverAPI.isConnected());
+        assertEquals(WebSocketServerAPI.ConnectionState.DISCONNECTED, webSocketServerAPI.getState());
+        assertFalse(webSocketServerAPI.isConnected());
     }
     
     @Test
@@ -48,12 +48,12 @@ class ServerAPITest {
             new Action(1, Direction.N)
         };
         
-        assertThrows(IllegalStateException.class, () -> serverAPI.send("player1", actions));
+        assertThrows(IllegalStateException.class, () -> webSocketServerAPI.send("player1", actions));
     }
     
     @Test
     void testConnectWithInvalidURL() {
-        assertThrows(Exception.class, () -> serverAPI.connect("invalid-url"));
+        assertThrows(Exception.class, () -> webSocketServerAPI.connect("invalid-url"));
     }
     
     @Test
@@ -61,7 +61,7 @@ class ServerAPITest {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<StartGameMessage> receivedMessage = new AtomicReference<>();
         
-        serverAPI.setOnGameStart(msg -> {
+        webSocketServerAPI.setOnGameStart(msg -> {
             receivedMessage.set(msg);
             latch.countDown();
         });
@@ -86,14 +86,14 @@ class ServerAPITest {
         StartGameMessage message = new StartGameMessage(gameStart);
         
         // Simulate handler invocation (internal method call for unit testing)
-        serverAPI.setOnGameStart(msg -> {
+        webSocketServerAPI.setOnGameStart(msg -> {
             receivedMessage.set(msg);
             latch.countDown();
         });
         
         // Manually trigger to test handler without actual WebSocket
-        if (serverAPI.onGameStart != null) {
-            serverAPI.onGameStart.accept(message);
+        if (webSocketServerAPI.onGameStart != null) {
+            webSocketServerAPI.onGameStart.accept(message);
         }
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
@@ -106,7 +106,7 @@ class ServerAPITest {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<NextTurnMessage> receivedMessage = new AtomicReference<>();
         
-        serverAPI.setOnNextTurn(msg -> {
+        webSocketServerAPI.setOnNextTurn(msg -> {
             receivedMessage.set(msg);
             latch.countDown();
         });
@@ -116,11 +116,11 @@ class ServerAPITest {
             System.currentTimeMillis()
         );
         
-        NextTurnMessage message = new NextTurnMessage("player1", state);
+        NextTurnMessage message = new NextTurnMessage("player1", state, 15000);
         
         // Trigger handler
-        if (serverAPI.onNextTurn != null) {
-            serverAPI.onNextTurn.accept(message);
+        if (webSocketServerAPI.onNextTurn != null) {
+            webSocketServerAPI.onNextTurn.accept(message);
         }
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
@@ -134,7 +134,7 @@ class ServerAPITest {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<EndGameMessage> receivedMessage = new AtomicReference<>();
         
-        serverAPI.setOnGameEnd(msg -> {
+        webSocketServerAPI.setOnGameEnd(msg -> {
             receivedMessage.set(msg);
             latch.countDown();
         });
@@ -149,7 +149,6 @@ class ServerAPITest {
         
         GameEnd gameEnd = new GameEnd(
             mapLayout,
-            initialUnits,
             deltas,
             "player1",
             System.currentTimeMillis()
@@ -158,8 +157,8 @@ class ServerAPITest {
         EndGameMessage message = new EndGameMessage(gameEnd);
         
         // Trigger handler
-        if (serverAPI.onGameEnd != null) {
-            serverAPI.onGameEnd.accept(message);
+        if (webSocketServerAPI.onGameEnd != null) {
+            webSocketServerAPI.onGameEnd.accept(message);
         }
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
@@ -172,7 +171,7 @@ class ServerAPITest {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<InvalidOperationMessage> receivedMessage = new AtomicReference<>();
         
-        serverAPI.setOnInvalidOperation(msg -> {
+        webSocketServerAPI.setOnInvalidOperation(msg -> {
             receivedMessage.set(msg);
             latch.countDown();
         });
@@ -180,8 +179,8 @@ class ServerAPITest {
         InvalidOperationMessage message = new InvalidOperationMessage("player1", "Invalid action");
         
         // Trigger handler
-        if (serverAPI.onInvalidOperation != null) {
-            serverAPI.onInvalidOperation.accept(message);
+        if (webSocketServerAPI.onInvalidOperation != null) {
+            webSocketServerAPI.onInvalidOperation.accept(message);
         }
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
@@ -195,7 +194,7 @@ class ServerAPITest {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> receivedError = new AtomicReference<>();
         
-        serverAPI.setOnError(error -> {
+        webSocketServerAPI.setOnError(error -> {
             receivedError.set(error);
             latch.countDown();
         });
@@ -203,8 +202,8 @@ class ServerAPITest {
         RuntimeException testError = new RuntimeException("Test error");
         
         // Trigger error handler
-        if (serverAPI.onError != null) {
-            serverAPI.onError.accept(testError);
+        if (webSocketServerAPI.onError != null) {
+            webSocketServerAPI.onError.accept(testError);
         }
         
         assertTrue(latch.await(1, TimeUnit.SECONDS));
@@ -215,8 +214,8 @@ class ServerAPITest {
     @Test
     void testCloseWhenNotConnected() {
         // Should not throw exception
-        assertDoesNotThrow(() -> serverAPI.close());
-        assertEquals(ServerAPI.ConnectionState.DISCONNECTED, serverAPI.getState());
+        assertDoesNotThrow(() -> webSocketServerAPI.close());
+        assertEquals(WebSocketServerAPI.ConnectionState.DISCONNECTED, webSocketServerAPI.getState());
     }
     
     @Test
@@ -225,10 +224,10 @@ class ServerAPITest {
         CountDownLatch latch2 = new CountDownLatch(1);
         
         // First handler
-        serverAPI.setOnGameStart(msg -> latch1.countDown());
+        webSocketServerAPI.setOnGameStart(msg -> latch1.countDown());
         
         // Second handler (should replace first)
-        serverAPI.setOnGameStart(msg -> latch2.countDown());
+        webSocketServerAPI.setOnGameStart(msg -> latch2.countDown());
         
         GameStart gameStart = new GameStart(
             new MapLayout(new Dimension(10, 10), new Position[0]),
@@ -239,8 +238,8 @@ class ServerAPITest {
         StartGameMessage message = new StartGameMessage(gameStart);
         
         // Trigger handler
-        if (serverAPI.onGameStart != null) {
-            serverAPI.onGameStart.accept(message);
+        if (webSocketServerAPI.onGameStart != null) {
+            webSocketServerAPI.onGameStart.accept(message);
         }
         
         // Only second handler should be invoked
@@ -251,7 +250,7 @@ class ServerAPITest {
     @Test
     void testStateTransitionOnConnect() {
         // Initial state
-        assertEquals(ServerAPI.ConnectionState.DISCONNECTED, serverAPI.getState());
+        assertEquals(WebSocketServerAPI.ConnectionState.DISCONNECTED, webSocketServerAPI.getState());
         
         // Note: We cannot easily test CONNECTING -> CONNECTED transition
         // without a real WebSocket server. This test verifies initial state only.
@@ -279,19 +278,19 @@ class ServerAPITest {
     @Test
     void testHandlerCanBeNull() {
         // Verify that null handlers don't cause exceptions
-        serverAPI.setOnGameStart(null);
-        serverAPI.setOnNextTurn(null);
-        serverAPI.setOnGameEnd(null);
-        serverAPI.setOnInvalidOperation(null);
-        serverAPI.setOnError(null);
+        webSocketServerAPI.setOnGameStart(null);
+        webSocketServerAPI.setOnNextTurn(null);
+        webSocketServerAPI.setOnGameEnd(null);
+        webSocketServerAPI.setOnInvalidOperation(null);
+        webSocketServerAPI.setOnError(null);
         
         // Should not throw when handlers are null
         assertDoesNotThrow(() -> {
-            if (serverAPI.onGameStart != null) {
+            if (webSocketServerAPI.onGameStart != null) {
                 GameStart statusUpdate = new GameStart(
                     new MapLayout(new Dimension(10, 10), new Position[0]), new Unit[0], 0
                 );
-                serverAPI.onGameStart.accept(new StartGameMessage(statusUpdate));
+                webSocketServerAPI.onGameStart.accept(new StartGameMessage(statusUpdate));
             }
         });
     }

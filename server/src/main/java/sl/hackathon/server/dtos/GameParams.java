@@ -5,7 +5,7 @@ package sl.hackathon.server.dtos;
  */
 public record GameParams(
     MapConfig mapConfig,
-    long turnTimeLimit,
+    int turnTimeLimit,
     float foodScarcity
 ) {
 }

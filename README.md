@@ -334,8 +334,6 @@ The system uses a client-server architecture with WebSocket-based communication:
 ```
 Server                          Client
   |                               |
-  |<------ join_game --------------|
-  |                               |
   |------- start_game ----------->|
   |                               |
   |------- next_turn ------------>|

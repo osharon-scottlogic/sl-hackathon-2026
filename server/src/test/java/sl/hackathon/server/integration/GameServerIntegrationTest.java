@@ -31,7 +31,7 @@ class GameServerIntegrationTest {
     
     private static final int TEST_PORT = 18080;
     private static final String SERVER_URL = "ws://localhost:" + TEST_PORT + "/game";
-    private static final long TURN_TIME_LIMIT = 5000L;
+    private static final int TURN_TIME_LIMIT = 5000;
     
     private GameServer gameServer;
     private Thread serverThread;

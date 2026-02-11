@@ -205,7 +205,7 @@ class GameStatusUpdaterTest {
     void testPawnEatsFood() {
         Unit pawn = new Unit(1, "player-1", UnitType.PAWN, new Position(5, 5));
         Unit base1 = new Unit(2, "player-1", UnitType.BASE, new Position(1, 1));
-        Unit food = new Unit(3, "none", UnitType.FOOD, new Position(6, 5));
+        Unit food = new Unit(3, null, UnitType.FOOD, new Position(6, 5));
         GameState gameState = new GameState(new Unit[]{pawn, food, base1}, System.currentTimeMillis());
 
         Action action = new Action(1, Direction.E);
@@ -223,7 +223,7 @@ class GameStatusUpdaterTest {
         Unit pawn2 = new Unit(2, "player-2", UnitType.PAWN, new Position(5, 7));
         Unit base1 = new Unit(3, "player-1", UnitType.BASE, new Position(1, 1));
         Unit base2 = new Unit(4, "player-2", UnitType.BASE, new Position(2, 2));
-        Unit food = new Unit(5, "none", UnitType.FOOD, new Position(5, 6));
+        Unit food = new Unit(5, null, UnitType.FOOD, new Position(5, 6));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2, food, base1,base2}, System.currentTimeMillis());
 
         Action[] actions = {
@@ -359,7 +359,7 @@ class GameStatusUpdaterTest {
         Unit base2 = new Unit(5, "player-2", UnitType.BASE, new Position(2, 2));
         Unit base3 = new Unit(6, "player-3", UnitType.BASE, new Position(3, 3));
 
-        Unit food = new Unit(7, "none", UnitType.FOOD, new Position(6, 5));
+        Unit food = new Unit(7, null, UnitType.FOOD, new Position(6, 5));
         GameState gameState = new GameState(new Unit[]{pawn1, pawn2, pawn3, food,base1,base2,base3}, System.currentTimeMillis());
 
         Action[] actions = {

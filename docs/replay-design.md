@@ -72,7 +72,7 @@ GameState structure:
 Unit structure:
 
 - `id`: Unique identifier (e.g., "base-player-1", "pawn-player-1-0", "food-0")
-- `owner`: Player ID or "none" for food
+- `owner`: Player ID or null for food
 - `type`: Unit type ("BASE", "PAWN", or "FOOD")
 - `position`: Object with `x` and `y` properties
 

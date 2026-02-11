@@ -7,7 +7,7 @@ import sl.hackathon.client.dtos.*;
 import sl.hackathon.client.handlers.GameMessageRouter;
 import sl.hackathon.client.handlers.MessageHandler;
 import sl.hackathon.client.messages.*;
-import sl.hackathon.client.transport.WebSocketTransport;
+import sl.hackathon.client.api.WebSocketTransport;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -134,13 +134,12 @@ class TransportAndRouterIntegrationTest {
         assertTrue(startLatch.await(1, TimeUnit.SECONDS));
         
         // Next turn
-        router.routeMessage(new NextTurnMessage("player1", state));
+        router.routeMessage(new NextTurnMessage("player1", state, 15000));
         assertTrue(turnLatch.await(1, TimeUnit.SECONDS));
         
         // End game
         GameEnd gameEnd = new GameEnd(
             new MapLayout(new Dimension(10, 10), new Position[0]),
-                new Unit[0],
                 new GameDelta[0],
                 null,
                 0

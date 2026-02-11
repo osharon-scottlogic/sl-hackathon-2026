@@ -4,8 +4,7 @@ import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import sl.hackathon.server.dtos.JoinGameMessage;
-import sl.hackathon.server.dtos.Message;
+import sl.hackathon.server.dtos.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -133,7 +132,7 @@ class ClientRegistryTest {
         registry.register(handler1);
         registry.register(handler2);
         
-        Message message = new JoinGameMessage("test-player");
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         registry.broadcast(message);
         
         verify(mockRemote1, times(1)).sendText(anyString());
@@ -142,7 +141,7 @@ class ClientRegistryTest {
 
     @Test
     void testBroadcastWithNoClients() {
-        Message message = new JoinGameMessage("test-player");
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         
         // Should not throw exception
         assertDoesNotThrow(() -> registry.broadcast(message));
@@ -166,8 +165,8 @@ class ClientRegistryTest {
         
         // Make first send fail
         doThrow(new IOException("Network error")).when(mockRemote1).sendText(anyString());
-        
-        Message message = new JoinGameMessage("test-player");
+
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         
         // Should not throw exception
         assertDoesNotThrow(() -> registry.broadcast(message));
@@ -185,8 +184,8 @@ class ClientRegistryTest {
         
         registry.register(handler1);
         registry.register(handler2);
-        
-        Message message = new JoinGameMessage("test-player");
+
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         registry.send("player-1", message);
         
         verify(mockRemote1, times(1)).sendText(anyString());
@@ -195,7 +194,7 @@ class ClientRegistryTest {
 
     @Test
     void testSendToNonExistentPlayerThrowsException() {
-        Message message = new JoinGameMessage("test-player");
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             registry.send("player-99", message);
@@ -205,7 +204,7 @@ class ClientRegistryTest {
 
     @Test
     void testSendWithNullPlayerIdThrowsException() {
-        Message message = new JoinGameMessage("test-player");
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             registry.send(null, message);

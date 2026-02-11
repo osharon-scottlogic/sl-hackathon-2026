@@ -49,7 +49,7 @@ The CommManager has 3 components:
   - `onClientConnected(handler)` — callback when a client connects.
   - `onClientDisconnected(playerId)` — callback when a client disconnects.
 - Listen for client connections, forward registered players to GameEngine, Track connected clients, assign `playerId` (`player-1`,`player-2`...), route messages.
-  - assign `playerID` (`player-1`/`player-2`) and connect them to the `GameEngine` (`join_game` message).
+  - assign `playerID` (`player-1`/`player-2`) and connect them to the `GameEngine`.
   - communicate in-game messages between the players and the `GameEngine`.
   - identify players disconnects and notify `GameEngine` (`player_left`).
 - Relay game events from engine to clients.
@@ -83,7 +83,6 @@ The CommManager has 3 components:
 
 ## Tests
 
-- More than one user can connect to server with `join_game` message.
 - Server shuts down after broadcasting to connected clients upon `end_game` message.
 - Server broadcasts `start_game`.
 - Server communicate `next_turn` and `invalid_operation` to the client and `actions` to the engine.

@@ -1,5 +1,8 @@
 package sl.hackathon.server.dtos;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
@@ -11,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @DisplayName("MessageCodec Tests")
 public class MessageCodecTest {
+
+    private static final ObjectMapper objectMapper = JsonMapper.builder().build();
 
     // ==================== ActionMessage Tests ====================
 
@@ -68,53 +73,6 @@ public class MessageCodecTest {
         assertEquals("player-2", result.getPlayerId());
         assertEquals(1, result.getActions().length);
         assertEquals(1, result.getActions()[0].unitId());
-    }
-
-    // ==================== JoinGameMessage Tests ====================
-
-    @Test
-    @DisplayName("Should serialize JoinGameMessage to JSON")
-    public void testSerializeJoinGameMessage() {
-        // Arrange
-        JoinGameMessage message = new JoinGameMessage("player-3");
-
-        // Act
-        String json = MessageCodec.serialize(message);
-
-        // Assert
-        assertNotNull(json);
-        assertTrue(json.contains("\"type\":\"JOIN_GAME\""));
-        assertTrue(json.contains("\"playerId\":\"player-3\""));
-    }
-
-    @Test
-    @DisplayName("Should deserialize JSON to JoinGameMessage")
-    public void testDeserializeJoinGameMessage() {
-        // Arrange
-        String json = "{\"type\":\"JOIN_GAME\",\"playerId\":\"player-3\"}";
-
-        // Act
-        Message message = MessageCodec.deserialize(json);
-
-        // Assert
-        assertInstanceOf(JoinGameMessage.class, message);
-        JoinGameMessage joinMsg = (JoinGameMessage) message;
-        assertEquals("player-3", joinMsg.getPlayerId());
-    }
-
-    @Test
-    @DisplayName("Should round-trip JoinGameMessage")
-    public void testRoundTripJoinGameMessage() {
-        // Arrange
-        JoinGameMessage originalMessage = new JoinGameMessage("player-test");
-
-        // Act
-        Message roundTrippedMessage = MessageCodec.roundTrip(originalMessage);
-
-        // Assert
-        assertInstanceOf(JoinGameMessage.class, roundTrippedMessage);
-        JoinGameMessage result = (JoinGameMessage) roundTrippedMessage;
-        assertEquals("player-test", result.getPlayerId());
     }
 
     // ==================== StartGameMessage Tests ====================
@@ -194,7 +152,7 @@ public class MessageCodecTest {
         // Arrange
         Unit[] units = {};
         GameState gameState = new GameState(units, System.currentTimeMillis());
-        NextTurnMessage message = new NextTurnMessage("player-1", gameState);
+        NextTurnMessage message = new NextTurnMessage("player-1", gameState, 15000);
 
         // Act
         String json = MessageCodec.serialize(message);
@@ -230,7 +188,7 @@ public class MessageCodecTest {
             new Unit(1, "player-1", UnitType.FOOD, new Position(2, 3))
         };
         GameState gameState = new GameState(units, 5000L);
-        NextTurnMessage originalMessage = new NextTurnMessage("player-5", gameState);
+        NextTurnMessage originalMessage = new NextTurnMessage("player-5", gameState, 15000);
 
         // Act
         Message roundTrippedMessage = MessageCodec.roundTrip(originalMessage);
@@ -364,20 +322,20 @@ public class MessageCodecTest {
 
     @Test
     @DisplayName("Should correctly identify and deserialize polymorphic types")
-    public void testPolymorphicDeserialization() {
+    public void testPolymorphicDeserialization() throws JsonProcessingException {
         // Arrange
-        String actionJson = "{\"type\":\"ACTION\",\"playerId\":\"p1\",\"actions\":[]}";
-        String joinJson = "{\"type\":\"JOIN_GAME\",\"playerId\":\"p1\"}";
-        String invalidJson = "{\"type\":\"INVALID_OPERATION\",\"playerId\":\"p1\",\"reason\":\"test\"}";
+        String actionJson = objectMapper.writeValueAsString(new ActionMessage("p1", new Action[]{}));
+        String startJson = objectMapper.writeValueAsString(new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{}, 0L)));
+        String invalidJson = objectMapper.writeValueAsString(new InvalidOperationMessage("p1","test"));
 
         // Act
         Message actionMsg = MessageCodec.deserialize(actionJson);
-        Message joinMsg = MessageCodec.deserialize(joinJson);
+        Message joinMsg = MessageCodec.deserialize(startJson);
         Message invalidMsg = MessageCodec.deserialize(invalidJson);
 
         // Assert
         assertInstanceOf(ActionMessage.class, actionMsg);
-        assertInstanceOf(JoinGameMessage.class, joinMsg);
+        assertInstanceOf(StartGameMessage.class, joinMsg);
         assertInstanceOf(InvalidOperationMessage.class, invalidMsg);
     }
 
@@ -548,14 +506,14 @@ public class MessageCodecTest {
     public void testSpecialCharactersInPlayerId() {
         // Arrange
         String playerId = "player-1@domain.com";
-        JoinGameMessage message = new JoinGameMessage(playerId);
+        Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
 
         // Act
         Message roundTripped = MessageCodec.roundTrip(message);
 
         // Assert
-        assertInstanceOf(JoinGameMessage.class, roundTripped);
-        JoinGameMessage result = (JoinGameMessage) roundTripped;
-        assertEquals(playerId, result.getPlayerId());
+        assertInstanceOf(StartGameMessage.class, roundTripped);
+        StartGameMessage result = (StartGameMessage) roundTripped;
+        assertEquals(10, result.getGameStart().map().dimension().width());
     }
 }
