@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.client.Bot;
+import sl.hackathon.client.api.MessageHandlerImpl;
 import sl.hackathon.client.api.ServerAPI;
 import sl.hackathon.client.dtos.*;
 import sl.hackathon.client.messages.*;
@@ -66,22 +67,19 @@ public class Orchestrator {
         this.bot = bot;
         this.playerId = playerId;
         
-        wireCallbacks();
         initialized = true;
         
         logger.info("Orchestrator initialized for player: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
     }
-    
-    /**
-     * Wires ServerAPI callbacks to orchestrator handlers.
-     */
-    private void wireCallbacks() {
-        serverAPI.setOnGameStart(this::handleGameStart);
-        serverAPI.setOnPlayerAssigned(this::handlePlayerAssigned);
-        serverAPI.setOnNextTurn(this::handleNextTurn);
-        serverAPI.setOnGameEnd(this::handleGameEnd);
-        serverAPI.setOnInvalidOperation(this::handleInvalidOperation);
-        serverAPI.setOnError(this::handleError);
+
+    public MessageRouter getMessageRouter() {
+        return new MessageRouter(
+                new MessageHandlerImpl(this::handleGameStart,
+                        this::handlePlayerAssigned,
+                        this::handleNextTurn,
+                        this::handleGameEnd,
+                        this::handleInvalidOperation,
+                        this::handleError));
     }
 
     /**

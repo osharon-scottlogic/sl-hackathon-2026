@@ -4,12 +4,10 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.client.dtos.Action;
-import sl.hackathon.client.handlers.GameMessageRouter;
-import sl.hackathon.client.handlers.MessageHandler;
+import sl.hackathon.client.messages.MessageRouter;
 import sl.hackathon.client.messages.*;
 
 import java.io.IOException;
-import java.util.function.Consumer;
 
 import static sl.hackathon.client.util.Ansi.*;
 
@@ -24,26 +22,23 @@ public class WebSocketServerAPI implements ServerAPI {
     
     private final WebSocketTransport transport;
 
-    // Message handlers (delegated via internal MessageHandler)
-    @Setter Consumer<StartGameMessage> onGameStart;
-    @Setter Consumer<PlayerAssignedMessage> onPlayerAssigned;
-    @Setter Consumer<NextTurnMessage> onNextTurn;
-    @Setter Consumer<EndGameMessage> onGameEnd;
-    @Setter Consumer<InvalidOperationMessage> onInvalidOperation;
-    @Setter Consumer<Throwable> onError;
-    
-    public WebSocketServerAPI() {
-        this.transport = new WebSocketTransport();
-        GameMessageRouter router = new GameMessageRouter(new InternalMessageHandler());
-        
+    public WebSocketServerAPI(MessageRouter messageRouter) {
+        this(messageRouter, new WebSocketTransport());
+    }
+
+    WebSocketServerAPI(MessageRouter messageRouter, WebSocketTransport transport) {
+        if (messageRouter == null) {
+            throw new IllegalArgumentException("MessageRouter cannot be null");
+        }
+        if (transport == null) {
+            throw new IllegalArgumentException("WebSocketTransport cannot be null");
+        }
+
+        this.transport = transport;
+
         // Wire transport to router
-        transport.setOnMessageReceived(router::routeMessage);
-        transport.setOnError(error -> {
-            logger.error("Transport error", error);
-            if (onError != null) {
-                onError.accept(error);
-            }
-        });
+        transport.setOnMessageReceived(messageRouter::routeMessage);
+        transport.setOnError(messageRouter::accept);
     }
     
     /**
@@ -91,12 +86,8 @@ public class WebSocketServerAPI implements ServerAPI {
     /**
      * Gets current connection state.
      */
-    public ConnectionState getState() {
-        return switch (transport.getState()) {
-            case DISCONNECTED -> ConnectionState.DISCONNECTED;
-            case CONNECTING -> ConnectionState.CONNECTING;
-            case CONNECTED -> ConnectionState.CONNECTED;
-        };
+    public TransportState getState() {
+        return transport.getState();
     }
     
     /**
@@ -105,68 +96,5 @@ public class WebSocketServerAPI implements ServerAPI {
     @Override
     public boolean isConnected() {
         return transport.isConnected();
-    }
-    
-    /**
-     * Internal message handler that delegates to the registered callbacks.
-     */
-    private class InternalMessageHandler implements MessageHandler {
-
-        @Override
-        public void handlePlayerAssigned(PlayerAssignedMessage message) {
-            logger.info(green("Player assigned: {}"), message.getPlayerId());
-            if (onPlayerAssigned != null) {
-                onPlayerAssigned.accept(message);
-            }
-        }
-
-        @Override
-        public void handleStartGame(StartGameMessage message) {
-            logger.info("Game started");
-            if (onGameStart != null) {
-                onGameStart.accept(message);
-            }
-        }
-        
-        @Override
-        public void handleNextTurn(NextTurnMessage message) {
-            logger.debug(green("Next turn for player: {}"), message.getPlayerId());
-            if (onNextTurn != null) {
-                onNextTurn.accept(message);
-            }
-        }
-        
-        @Override
-        public void handleGameEnd(EndGameMessage message) {
-            logger.info(green("Game ended, winner: {}"), message.getGameEnd() != null ? message.getGameEnd().winnerId() : "unknown");
-            if (onGameEnd != null) {
-                onGameEnd.accept(message);
-            }
-        }
-        
-        @Override
-        public void handleInvalidOperation(InvalidOperationMessage message) {
-            logger.warn(yellow("Invalid operation for player {}: {}"), message.getPlayerId(), message.getReason());
-            if (onInvalidOperation != null) {
-                onInvalidOperation.accept(message);
-            }
-        }
-        
-        @Override
-        public void handleError(Throwable error) {
-            logger.error(redBg("Message handling error"), error);
-            if (onError != null) {
-                onError.accept(error);
-            }
-        }
-    }
-    
-    /**
-     * Connection state enumeration.
-     */
-    public enum ConnectionState {
-        DISCONNECTED,
-        CONNECTING,
-        CONNECTED
     }
 }

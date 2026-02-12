@@ -54,21 +54,4 @@ public class MessageCodec {
             throw new RuntimeException("Failed to deserialize message: " + json, e);
         }
     }
-
-    /**
-     * Performs a round-trip serialization/deserialization of a message.
-     * Useful for testing and validation.
-     * 
-     * @param message the message to round-trip
-     * @return a new Message object deserialized from the serialized form
-     * @throws IllegalArgumentException if message is null
-     * @throws RuntimeException if serialization or deserialization fails
-     */
-    public static Message roundTrip(Message message) {
-        if (message == null) {
-            throw new IllegalArgumentException("Message cannot be null");
-        }
-        String json = serialize(message);
-        return deserialize(json);
-    }
 }

@@ -1,10 +1,8 @@
-package sl.hackathon.client.transport;
+package sl.hackathon.client.api;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import sl.hackathon.client.api.TransportState;
-import sl.hackathon.client.api.WebSocketTransport;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;

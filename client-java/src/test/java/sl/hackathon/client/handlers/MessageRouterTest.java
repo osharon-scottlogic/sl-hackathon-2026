@@ -2,6 +2,7 @@ package sl.hackathon.client.handlers;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sl.hackathon.client.api.MessageHandler;
 import sl.hackathon.client.dtos.*;
 import sl.hackathon.client.messages.*;
 
@@ -16,20 +17,20 @@ import static org.junit.jupiter.api.Assertions.*;
  * Unit tests for GameMessageRouter.
  * Tests message routing, deserialization, error handling, and delegation to handlers.
  */
-class GameMessageRouterTest {
+class MessageRouterTest {
     
-    private GameMessageRouter router;
+    private MessageRouter router;
     private TestMessageHandler testHandler;
     
     @BeforeEach
     void setUp() {
         testHandler = new TestMessageHandler();
-        router = new GameMessageRouter(testHandler);
+        router = new MessageRouter(testHandler);
     }
     
     @Test
     void testConstructorWithNullHandler() {
-        assertThrows(IllegalArgumentException.class, () -> new GameMessageRouter(null));
+        assertThrows(IllegalArgumentException.class, () -> new MessageRouter(null));
     }
     
     @Test

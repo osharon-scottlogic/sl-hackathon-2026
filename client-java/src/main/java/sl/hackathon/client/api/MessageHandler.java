@@ -1,4 +1,4 @@
-package sl.hackathon.client.handlers;
+package sl.hackathon.client.api;
 
 import sl.hackathon.client.messages.*;
 

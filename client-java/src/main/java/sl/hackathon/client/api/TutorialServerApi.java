@@ -1,15 +1,14 @@
 package sl.hackathon.client.api;
 
+import lombok.Setter;
 import sl.hackathon.client.dtos.Action;
 import sl.hackathon.client.messages.*;
 import sl.hackathon.client.tutorial.TutorialDefinition;
 import sl.hackathon.client.tutorial.TutorialEngine;
 import sl.hackathon.client.tutorial.TutorialLoader;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.Consumer;
 
 public class TutorialServerApi implements ServerAPI {
     private static final String PREFIX = "tutorial:";
@@ -20,14 +19,13 @@ public class TutorialServerApi implements ServerAPI {
     private volatile boolean closed;
 
     private TutorialEngine engine;
-    private String assignedPlayerId = DEFAULT_PLAYER_ID;
+    private final String assignedPlayerId = DEFAULT_PLAYER_ID;
 
-    private Consumer<StartGameMessage> onGameStart;
-    private Consumer<PlayerAssignedMessage> onPlayerAssigned;
-    private Consumer<NextTurnMessage> onNextTurn;
-    private Consumer<EndGameMessage> onGameEnd;
-    private Consumer<InvalidOperationMessage> onInvalidOperation;
-    private Consumer<Throwable> onError;
+    private final MessageRouter messageRouter;
+
+    public TutorialServerApi (MessageRouter messageRouter) {
+        this.messageRouter = messageRouter;
+    }
 
     @Override
     public void connect(String serverURL) throws Exception {
@@ -41,19 +39,15 @@ public class TutorialServerApi implements ServerAPI {
             this.engine = new TutorialEngine(definition, assignedPlayerId, new Random(0L));
             this.connected = true;
 
-            if (onPlayerAssigned != null) {
-                onPlayerAssigned.accept(new PlayerAssignedMessage(assignedPlayerId));
-            }
-            if (onGameStart != null) {
-                onGameStart.accept(engine.buildStartGameMessage());
-            }
-            if (onNextTurn != null) {
-                onNextTurn.accept(engine.buildNextTurnMessage());
+            if (messageRouter != null) {
+                messageRouter.accept(new PlayerAssignedMessage(assignedPlayerId));
+                messageRouter.accept(engine.buildStartGameMessage());
+                messageRouter.accept(engine.buildNextTurnMessage());
             }
         } catch (Exception e) {
             connected = false;
-            if (onError != null) {
-                onError.accept(e);
+            if (messageRouter != null) {
+                messageRouter.accept(e);
                 return;
             }
             throw e;
@@ -62,7 +56,7 @@ public class TutorialServerApi implements ServerAPI {
     }
 
     @Override
-    public void send(String playerId, Action[] actions) throws IOException {
+    public void send(String playerId, Action[] actions) {
         if (!connected || closed) {
             return;
         }
@@ -72,7 +66,7 @@ public class TutorialServerApi implements ServerAPI {
         String effectivePlayerId = Objects.requireNonNullElse(playerId, assignedPlayerId);
 
         for (Message message : engine.handleActions(effectivePlayerId, actions)) {
-            dispatch(message);
+            messageRouter.accept(message);
         }
 
     }
@@ -87,66 +81,6 @@ public class TutorialServerApi implements ServerAPI {
     @Override
     public boolean isConnected() {
         return connected && !closed;
-    }
-
-    @Override
-    public void setOnGameStart(Consumer<StartGameMessage> onGameStart) {
-        this.onGameStart = onGameStart;
-
-    }
-
-    @Override
-    public void setOnPlayerAssigned(Consumer<PlayerAssignedMessage> onPlayerAssigned) {
-        this.onPlayerAssigned = onPlayerAssigned;
-
-    }
-
-    @Override
-    public void setOnNextTurn(Consumer<NextTurnMessage> onNextTurn) {
-        this.onNextTurn = onNextTurn;
-
-    }
-
-    @Override
-    public void setOnGameEnd(Consumer<EndGameMessage> onGameEnd) {
-        this.onGameEnd = onGameEnd;
-
-    }
-
-    @Override
-    public void setOnInvalidOperation(Consumer<InvalidOperationMessage> onInvalidOperation) {
-        this.onInvalidOperation = onInvalidOperation;
-
-    }
-
-    @Override
-    public void setOnError(Consumer<Throwable> onError) {
-        this.onError = onError;
-
-    }
-
-    private void dispatch(Message message) {
-        if (message instanceof StartGameMessage msg) {
-            if (onGameStart != null) {
-                onGameStart.accept(msg);
-            }
-        } else if (message instanceof PlayerAssignedMessage msg) {
-            if (onPlayerAssigned != null) {
-                onPlayerAssigned.accept(msg);
-            }
-        } else if (message instanceof NextTurnMessage msg) {
-            if (onNextTurn != null) {
-                onNextTurn.accept(msg);
-            }
-        } else if (message instanceof EndGameMessage msg) {
-            if (onGameEnd != null) {
-                onGameEnd.accept(msg);
-            }
-        } else if (message instanceof InvalidOperationMessage msg) {
-            if (onInvalidOperation != null) {
-                onInvalidOperation.accept(msg);
-            }
-        }
     }
 
     private String parseTutorialId(String serverURL) {

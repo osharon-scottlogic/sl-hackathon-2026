@@ -190,7 +190,7 @@ class WebSocketServerAPIMessageSerializationTest {
         };
         
         ActionMessage original = new ActionMessage("player1", actions);
-        Message roundTripped = MessageCodec.roundTrip(original);
+        Message roundTripped = roundTrip(original);
         
         assertInstanceOf(ActionMessage.class, roundTripped);
         ActionMessage result = (ActionMessage) roundTripped;
@@ -217,6 +217,23 @@ class WebSocketServerAPIMessageSerializationTest {
     
     @Test
     void testRoundTripNull() {
-        assertThrows(IllegalArgumentException.class, () -> MessageCodec.roundTrip(null));
+        assertThrows(IllegalArgumentException.class, () -> roundTrip(null));
+    }
+
+    /**
+     * Performs a round-trip serialization/deserialization of a message.
+     * Useful for testing and validation.
+     *
+     * @param message the message to round-trip
+     * @return a new Message object deserialized from the serialized form
+     * @throws IllegalArgumentException if message is null
+     * @throws RuntimeException if serialization or deserialization fails
+     */
+    public static Message roundTrip(Message message) {
+        if (message == null) {
+            throw new IllegalArgumentException("Message cannot be null");
+        }
+        String json = MessageCodec.serialize(message);
+        return MessageCodec.deserialize(json);
     }
 }

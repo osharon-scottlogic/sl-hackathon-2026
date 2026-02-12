@@ -1,17 +1,17 @@
-package sl.hackathon.client.handlers;
+package sl.hackathon.client.messages;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sl.hackathon.client.messages.*;
+import sl.hackathon.client.api.MessageHandler;
 import sl.hackathon.client.util.Ansi;
 
 /**
  * Routes incoming messages to the appropriate handler methods.
  * Acts as a dispatcher that deserializes messages and delegates to the MessageHandler.
  */
-public class GameMessageRouter {
+public class MessageRouter {
     
-    private static final Logger logger = LoggerFactory.getLogger(GameMessageRouter.class);
+    private static final Logger logger = LoggerFactory.getLogger(MessageRouter.class);
     
     private final MessageHandler messageHandler;
     
@@ -20,7 +20,7 @@ public class GameMessageRouter {
      * 
      * @param messageHandler the handler that will process routed messages
      */
-    public GameMessageRouter(MessageHandler messageHandler) {
+    public MessageRouter(MessageHandler messageHandler) {
         if (messageHandler == null) {
             throw new IllegalArgumentException("MessageHandler cannot be null");
         }
@@ -93,6 +93,34 @@ public class GameMessageRouter {
             logger.error(Ansi.RED+"Error while routing message: "+Ansi.YELLOW+"{}"+Ansi.RESET, e.getMessage(), e);
             messageHandler.handleError(new MessageRoutingException("Error in message handler", e));
         }
+    }
+
+    public void accept(Message message) {
+        routeMessage(message);
+    }
+
+    public void accept(PlayerAssignedMessage message) {
+        messageHandler.handlePlayerAssigned(message);
+    }
+
+    public void accept(StartGameMessage message) {
+        messageHandler.handleStartGame(message);
+    }
+
+    public void accept(NextTurnMessage message) {
+        messageHandler.handleNextTurn(message);
+    }
+
+    public void accept(EndGameMessage message) {
+        messageHandler.handleGameEnd(message);
+    }
+
+    public void accept(InvalidOperationMessage message) {
+        messageHandler.handleInvalidOperation(message);
+    }
+
+    public void accept(Throwable e) {
+        messageHandler.handleError(e);
     }
     
     /**

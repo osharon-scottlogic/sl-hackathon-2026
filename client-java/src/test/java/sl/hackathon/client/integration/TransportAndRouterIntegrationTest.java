@@ -4,8 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sl.hackathon.client.api.TransportState;
 import sl.hackathon.client.dtos.*;
-import sl.hackathon.client.handlers.GameMessageRouter;
-import sl.hackathon.client.handlers.MessageHandler;
+import sl.hackathon.client.messages.MessageRouter;
+import sl.hackathon.client.api.MessageHandler;
 import sl.hackathon.client.messages.*;
 import sl.hackathon.client.api.WebSocketTransport;
 
@@ -22,14 +22,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class TransportAndRouterIntegrationTest {
     
     private WebSocketTransport transport;
-    private GameMessageRouter router;
+    private MessageRouter router;
     private TestGameHandler gameHandler;
     
     @BeforeEach
     void setUp() {
         transport = new WebSocketTransport();
         gameHandler = new TestGameHandler();
-        router = new GameMessageRouter(gameHandler);
+        router = new MessageRouter(gameHandler);
     }
     
     @Test

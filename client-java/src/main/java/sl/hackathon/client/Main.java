@@ -2,9 +2,11 @@ package sl.hackathon.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sl.hackathon.client.api.MessageHandlerImpl;
 import sl.hackathon.client.api.ServerAPI;
 import sl.hackathon.client.api.TutorialServerApi;
 import sl.hackathon.client.api.WebSocketServerAPI;
+import sl.hackathon.client.messages.MessageRouter;
 import sl.hackathon.client.orchestrator.Orchestrator;
 import sl.hackathon.client.util.Ansi;
 
@@ -40,19 +42,20 @@ public class Main {
         Orchestrator orchestrator = null;
         
         try {
+            // Instantiate Orchestrator
+            orchestrator = new Orchestrator();
+            MessageRouter messageRouter = orchestrator.getMessageRouter();
+            logger.info("Orchestrator created");
+
             // Instantiate ServerAPI
             // Tutorial mode is selected via a URL prefixed with "tutorial" (canonical: tutorial:<tutorialId>)
-            serverAPI = serverURL.startsWith("tutorial") ? new TutorialServerApi() : new WebSocketServerAPI();
+            serverAPI = serverURL.startsWith("tutorial") ? new TutorialServerApi(messageRouter) : new WebSocketServerAPI(messageRouter);
             logger.info("ServerAPI created");
             
             // Instantiate Bot (using StrategicBot as default)
             Bot bot = new StrategicBot();
             logger.info("Bot created: " + Ansi.YELLOW + "{}" + Ansi.RESET, bot.getClass().getSimpleName());
-            
-            // Instantiate Orchestrator
-            orchestrator = new Orchestrator();
-            logger.info("Orchestrator created");
-            
+
             // Initialize orchestrator with dependencies
             orchestrator.init(serverAPI, bot, playerId);
             logger.info("Orchestrator initialized");
