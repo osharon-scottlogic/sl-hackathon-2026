@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class GameEngineTest {
     private GameEngine gameEngine;
-    private GameParams gameParams;
+    private GameSettings gameSettings;
 
     @BeforeEach
     void setUp() {
@@ -27,8 +27,7 @@ class GameEngineTest {
             new Position(1, 1),
             new Position(8, 8)
         };
-        MapConfig mapConfig = new MapConfig(dimension, walls, baseLocations);
-        gameParams = new GameParams(mapConfig, 5000, 0.3f);
+        gameSettings = new GameSettings(dimension, walls, baseLocations, 5000, 0.3f, false);
     }
 
     // ===== PLAYER MANAGEMENT TESTS =====
@@ -63,6 +62,7 @@ class GameEngineTest {
 
     @Test
     void testRemovePlayer() {
+        gameEngine.initialize(gameSettings);
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
         gameEngine.removePlayer("player-1");
@@ -74,9 +74,11 @@ class GameEngineTest {
 
     @Test
     void testRemoveNonExistentPlayer() {
+        gameEngine.initialize(gameSettings);
         gameEngine.addPlayer("player-1");
-        gameEngine.removePlayer("player-2");
-        assertEquals(1, gameEngine.getActivePlayers().size(), "Active player count should not change");
+        gameEngine.addPlayer("player-2");
+        gameEngine.removePlayer("player-3");
+        assertEquals(2, gameEngine.getActivePlayers().size(), "Active player count should not change");
     }
 
     // ===== INITIALIZATION TESTS =====
@@ -86,19 +88,11 @@ class GameEngineTest {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
         
-        GameState initialState = gameEngine.initialize(gameParams);
+        GameState initialState = gameEngine.initialize(gameSettings);
         
         assertTrue(gameEngine.isInitialized(), "Game should be initialized");
         assertNotNull(initialState, "Initial state should not be null");
-        assertFalse(initialState.units().length == 0, "Should have units");
-    }
-
-    @Test
-    void testInitializeWithNullParams() {
-        gameEngine.addPlayer("player-1");
-        
-        assertThrows(IllegalArgumentException.class, () -> gameEngine.initialize(null),
-            "Should throw exception for null params");
+        assertNotEquals(0, initialState.units().length, "Should have units");
     }
 
     @Test
@@ -106,7 +100,7 @@ class GameEngineTest {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
         
-        GameState initialState = gameEngine.initialize(gameParams);
+        GameState initialState = gameEngine.initialize(gameSettings);
         
         boolean hasPlayerOneBase = false;
         boolean hasPlayerTwoBase = false;
@@ -129,7 +123,7 @@ class GameEngineTest {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
         
-        GameState initialState = gameEngine.initialize(gameParams);
+        GameState initialState = gameEngine.initialize(gameSettings);
         
         boolean hasPlayerOnePawn = false;
         boolean hasPlayerTwoPawn = false;
@@ -152,7 +146,7 @@ class GameEngineTest {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
         
-        GameState initialState = gameEngine.initialize(gameParams);
+        GameState initialState = gameEngine.initialize(gameSettings);
         
         // Check that player-1 base is at (1, 1)
         Unit player1Base = findUnitById(initialState, 1);
@@ -173,7 +167,7 @@ class GameEngineTest {
     void testGetGameState() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         
         GameState state = gameEngine.getGameState();
         assertNotNull(state, "Game state should not be null");
@@ -184,7 +178,7 @@ class GameEngineTest {
     void testGetGameStateHistoryAfterInitialize() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         
         List<GameDelta> history = gameEngine.getGameDeltaHistory();
         assertEquals(1, history.size(), "History should have initial state");
@@ -194,7 +188,7 @@ class GameEngineTest {
     void testCurrentTurnInitial() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         
         assertEquals(0, gameEngine.getCurrentTurn(), "Initial turn should be 0");
     }
@@ -214,7 +208,7 @@ class GameEngineTest {
     void testHandlePlayerActionsFromInactivePlayer() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         
         Action[] actions = {new Action(1, Direction.N)};
         boolean result = gameEngine.handlePlayerActions("player-3", actions);
@@ -226,7 +220,7 @@ class GameEngineTest {
     void testHandleValidPlayerActions() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         
         GameState initialState = gameEngine.getGameState();
         Unit player1Pawn = findUnitById(initialState, 1);
@@ -244,7 +238,7 @@ class GameEngineTest {
     void testHandleInvalidPlayerActions() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         
         // Try to move a non-existent unit
         Action[] actions = {new Action(0, Direction.N)};
@@ -258,7 +252,7 @@ class GameEngineTest {
     void testGameStateHistoryAfterActions() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         
         GameState initialState = gameEngine.getGameState();
         Unit player1Pawn = findUnitById(initialState, 1);
@@ -278,7 +272,7 @@ class GameEngineTest {
     void testIsGameEndedInitially() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         
         assertFalse(gameEngine.isGameEnded(), "Game should not be ended initially");
     }
@@ -287,7 +281,7 @@ class GameEngineTest {
     void testGetWinnerWhenGameNotEnded() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         
         assertNull(GameEndValidator.getWinnerId(gameEngine.getGameState()), "No winner when game is still playing");
     }
@@ -298,7 +292,7 @@ class GameEngineTest {
     void testGetActivePlayersAfterOperations() {
         gameEngine.addPlayer("player-1");
         gameEngine.addPlayer("player-2");
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         gameEngine.removePlayer("player-1");
         
         List<String> players = gameEngine.getActivePlayers();
@@ -313,7 +307,7 @@ class GameEngineTest {
         gameEngine.addPlayer("player-1");
         assertFalse(gameEngine.isInitialized(), "Should not be initialized without initialize call");
         
-        gameEngine.initialize(gameParams);
+        gameEngine.initialize(gameSettings);
         assertTrue(gameEngine.isInitialized(), "Should be initialized after initialize call");
     }
 

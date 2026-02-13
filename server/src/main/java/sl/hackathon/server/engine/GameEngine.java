@@ -25,10 +25,10 @@ public interface GameEngine {
     /**
      * Initializes the game with the given parameters.
      *
-     * @param gameParams the game parameters including map and turn time limit
+     * @param gameSettings the game parameters including map and turn time limit
      * @return the initial game state
      */
-    GameState initialize(GameParams gameParams);
+    GameState initialize(GameSettings gameSettings);
 
     /**
      * Gets the current game state.

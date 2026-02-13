@@ -2,9 +2,9 @@ package sl.hackathon.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sl.hackathon.server.dtos.MapConfig;
+import sl.hackathon.server.dtos.GameSettings;
 import sl.hackathon.server.engine.GameEngineImpl;
-import sl.hackathon.server.maps.MapFactory;
+import sl.hackathon.server.engine.GameSettingsLoader;
 import sl.hackathon.server.orchestration.GameServer;
 import sl.hackathon.server.orchestration.ServerConfig;
 
@@ -19,24 +19,21 @@ public class Main {
 
     // Default server configuration
     private static final int DEFAULT_PORT = 8080;
-    private static final int DEFAULT_TURN_TIME_LIMIT = 15000; // 15 seconds
-    
+
     public static void main(String[] args) {       
         try {
             String buildVersion = readBuildVersion();
             
             logger.info(green("Starting Game Server v{}..."), buildVersion);
 
-            // Create map configuration
-            MapConfig mapConfig = MapFactory.createMapConfig("map-001.json");
-
-            
+            // load game settings
+            GameSettings gameSettings = GameSettingsLoader.load("map-001.json");
 
             // Create game engine + server
             GameServer gameServer = new GameServer(
-                new ServerConfig(DEFAULT_PORT,
-                    mapConfig,
-                    DEFAULT_TURN_TIME_LIMIT,
+                new ServerConfig(
+                    gameSettings,
+                    DEFAULT_PORT,
                     majorVersionOf(buildVersion)),
                 new GameEngineImpl()
             );

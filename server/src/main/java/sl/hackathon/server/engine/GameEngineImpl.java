@@ -1,27 +1,35 @@
 package sl.hackathon.server.engine;
 
 import lombok.Getter;
+import lombok.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.*;
+import sl.hackathon.server.orchestration.GameSession;
 import sl.hackathon.server.validators.ActionValidator;
 import sl.hackathon.server.validators.GameEndValidator;
 
 import java.util.*;
 
+import static sl.hackathon.server.util.Ansi.redBg;
+import static sl.hackathon.server.util.Ansi.yellow;
+
 /**
  * Implementation of GameEngine that manages the authoritative game state.
  */
 public class GameEngineImpl implements GameEngine {
+    private static final Logger logger = LoggerFactory.getLogger(GameEngineImpl.class);
+
     @Getter
     private final List<String> activePlayers;
     private GameState previousGameState = null;
     private GameState currentGameState = null;
     private final List<GameDelta> gameDeltaHistory;
-    private GameParams gameParams;
+    private GameSettings gameSettings;
     @Getter
     private boolean initialized;
     @Getter
     private int currentTurn;
-    private final ActionValidator actionValidator;
     private final UnitGenerator unitGenerator;
 
     public GameEngineImpl() {
@@ -29,7 +37,6 @@ public class GameEngineImpl implements GameEngine {
         this.gameDeltaHistory = new ArrayList<>();
         this.initialized = false;
         this.currentTurn = 0;
-        this.actionValidator = new ActionValidator();
         this.unitGenerator = new UnitGenerator();
     }
 
@@ -52,28 +59,32 @@ public class GameEngineImpl implements GameEngine {
      */
     @Override
     public void removePlayer(String playerId) {
-        activePlayers.remove(playerId);
+        if (activePlayers.remove(playerId)) {
+            previousGameState = currentGameState;
+            Unit[] allOtherUnits= Arrays
+                    .stream(currentGameState.units())
+                    .filter(u->!playerId.equals(u.owner())).toArray(Unit[]::new);
+            currentGameState = new GameState(allOtherUnits, System.currentTimeMillis());
+        } else {
+            logger.error(redBg(yellow("Trying to remove non-active player {}")), playerId);
+        }
     }
 
     /**
      * Initializes the game with the given parameters.
      *
-     * @param gameParams the game parameters including map and turn time limit
+     * @param gameSettings the game parameters including map and turn time limit
      * @return the initial game state
      */
     @Override
-    public GameState initialize(GameParams gameParams) {
-        if (gameParams == null) {
-            throw new IllegalArgumentException("GameParams cannot be null");
-        }
-
-        this.gameParams = gameParams;
+    public GameState initialize(@NonNull GameSettings gameSettings) {
+        this.gameSettings = gameSettings;
         initialized = true;
         currentTurn = 0;
         gameDeltaHistory.clear();
 
         // Create initial game state with units spawned at potential base locations
-        Unit[] initialUnits = unitGenerator.createInitialUnits(gameParams, activePlayers);
+        Unit[] initialUnits = unitGenerator.createInitialUnits(gameSettings, activePlayers);
         previousGameState = null;
         currentGameState = new GameState(initialUnits, System.currentTimeMillis());
 
@@ -119,7 +130,7 @@ public class GameEngineImpl implements GameEngine {
             return false;
         }
 
-        List<InvalidAction> invalidActions = actionValidator.validate(currentGameState, playerId, actions);
+        List<InvalidAction> invalidActions = ActionValidator.validate(currentGameState, playerId, actions);
         if (!invalidActions.isEmpty()) {
             return false;
         }
@@ -130,7 +141,7 @@ public class GameEngineImpl implements GameEngine {
 
         // Spawn food after state update
         List<Unit> updatedUnits = new ArrayList<>(Arrays.asList(currentGameState.units()));
-        unitGenerator.spawnFood(updatedUnits, gameParams);
+        unitGenerator.spawnFood(updatedUnits, gameSettings);
         currentGameState = new GameState(updatedUnits.toArray(new Unit[0]), currentGameState.startAt());
 
         gameDeltaHistory.add(GameDeltaFactory.get(previousGameState, currentGameState));

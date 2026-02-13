@@ -55,8 +55,8 @@ class GameServerIntegrationTest {
             new Position(1, 1),
             new Position(8, 8)
         };
-        MapConfig mapConfig = new MapConfig(dimension, walls, baseLocations);
-        ServerConfig config = new ServerConfig(TEST_PORT, mapConfig, TURN_TIME_LIMIT, SERVER_VERSION);
+        GameSettings gameSettings = new GameSettings(dimension, walls, baseLocations, 1000, 1.0f, false);
+        ServerConfig config = new ServerConfig(gameSettings, TEST_PORT, SERVER_VERSION);
         
         // Create game engine
         GameEngine gameEngine = new GameEngineImpl();

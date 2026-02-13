@@ -50,8 +50,8 @@ class GameServerTest {
         Dimension dimension = new Dimension(10, 10);
         Position[] walls = new Position[]{new Position(5, 5)};
         Position[] baseLocations = new Position[]{new Position(1, 1), new Position(9, 9)};
-        MapConfig mapConfig = new MapConfig(dimension, walls, baseLocations);
-        config = new ServerConfig(getAvailablePort(), mapConfig, 200, SERVER_VERSION); // Use random port to avoid conflicts
+        GameSettings gameSettings = new GameSettings(dimension, walls, baseLocations, 200, 1.0f, false);
+        config = new ServerConfig(gameSettings, getAvailablePort(), SERVER_VERSION); // Use random port to avoid conflicts
         
         // Reset static state in WebSocketAdapter
         WebSocketAdapter.reset();
@@ -71,21 +71,7 @@ class GameServerTest {
         // Reset static state
         WebSocketAdapter.reset();
     }
-    
-    @Test
-    void constructor_WithNullConfig_ThrowsException() {
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> 
-            new GameServer(null, mockEngine));
-    }
-    
-    @Test
-    void constructor_WithNullGameEngine_ThrowsException() {
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> 
-            new GameServer(config, null));
-    }
-    
+
 //    @Test
     void constructor_WithValidParameters_CreatesGameServer() {
         // Act

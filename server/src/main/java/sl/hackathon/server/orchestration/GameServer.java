@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.Getter;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.communication.ClientRegistry;
@@ -44,14 +45,7 @@ public class GameServer {
      * @param gameEngine the game engine instance
      * @throws IllegalArgumentException if config or gameEngine is null
      */
-    public GameServer(ServerConfig config, GameEngine gameEngine) {
-        if (config == null) {
-            throw new IllegalArgumentException("ServerConfig cannot be null");
-        }
-        if (gameEngine == null) {
-            throw new IllegalArgumentException("GameEngine cannot be null");
-        }
-        
+    public GameServer(@NonNull ServerConfig config, @NonNull GameEngine gameEngine) {
         this.config = config;
         this.gameEngine = gameEngine;
         this.clientRegistry = new ClientRegistry();
@@ -91,7 +85,7 @@ public class GameServer {
             
             if (message instanceof ActionMessage actionMsg) {
                 if (gameSession != null) {
-                    gameSession.submitAction(playerId, gameSession.getCurrentTurnId(), actionMsg.getActions());
+                    gameSession.submitAction(playerId, gameSession.getCurrentRound(), actionMsg.getActions());
                 }
             }
         });
@@ -110,16 +104,9 @@ public class GameServer {
             // Start WebSocket server
             webSocketServer.start();
             logger.info(green("WebSocket server started on port {}"), config.port());
-            
-            // Create GameParams
-            GameParams gameParams = new GameParams(
-                config.mapConfig(),
-                config.turnTimeLimit(),
-                0.3f // default food scarcity
-            );
-            
+
             // Create and start GameSession
-            gameSession = new GameSession(gameEngine, clientRegistry, gameParams);
+            gameSession = new GameSession(gameEngine, clientRegistry, config.gameSettings());
             gameSessionThread = new Thread(gameSession, "GameSession-Thread");
             gameSessionThread.start();
             logger.info("GameSession thread started");

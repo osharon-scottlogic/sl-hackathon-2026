@@ -46,14 +46,14 @@ public class UnitGenerator {
      * Spawns a BASE at each potential base location for each player.
      * Spawns initial PAWN units for each player.
      *
-     * @param gameParams the game parameters
+     * @param gameSettings the game parameters
      * @return array of initial units
      */
-    public Unit[] createInitialUnits(GameParams gameParams, List<String> players) {
+    public Unit[] createInitialUnits(GameSettings gameSettings, List<String> players) {
         List<Unit> units = new ArrayList<>();
 
         // Get potential base locations and active players
-        Position[] baseLocations = gameParams.mapConfig().potentialBaseLocations();
+        Position[] baseLocations = gameSettings.potentialBaseLocations();
 
         // Spawn bases and pawns for each player
         for (int i = 0; i < players.size() && i < baseLocations.length; i++) {
@@ -81,7 +81,7 @@ public class UnitGenerator {
 
         // Optionally spawn food units (scattered across map)
         // This can be enhanced based on foodScarcity parameter
-        spawnFood(units, gameParams);
+        spawnFood(units, gameSettings);
 
         return units.toArray(new Unit[0]);
     }
@@ -91,11 +91,11 @@ public class UnitGenerator {
      * Creates at most one food unit per call if a random float is less than foodScarcity.
      *
      * @param units the list of units to add food to
-     * @param gameParams the game parameters
+     * @param gameSettings the game parameters
      */
-    public void spawnFood(List<Unit> units, GameParams gameParams) {
-        Dimension mapDim = gameParams.mapConfig().dimension();
-        float scarcity = gameParams.foodScarcity();
+    public void spawnFood(List<Unit> units, GameSettings gameSettings) {
+        Dimension mapDim = gameSettings.dimension();
+        float scarcity = gameSettings.foodScarcity();
 
         // Check if food should spawn based on scarcity
         Random random = new Random();
@@ -109,7 +109,7 @@ public class UnitGenerator {
             occupiedPositions.add(unit.position());
         }
 
-        Set<Position> wallPositions = new HashSet<>(Arrays.asList(gameParams.mapConfig().walls()));
+        Set<Position> wallPositions = new HashSet<>(Arrays.asList(gameSettings.walls()));
 
         // Spawn one food at a random unoccupied position
         int mapArea = mapDim.width() * mapDim.height();

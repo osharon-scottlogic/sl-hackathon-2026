@@ -1,6 +1,7 @@
 package sl.hackathon.server.orchestration;
 
-import sl.hackathon.server.dtos.MapConfig;
+import lombok.NonNull;
+import sl.hackathon.server.dtos.GameSettings;
 
 /**
  * Configuration object for the game server.
@@ -11,25 +12,22 @@ import sl.hackathon.server.dtos.MapConfig;
  * - Validate configuration values
  * - Provide default values for optional parameters
  */
-public record ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit, int serverVersion) {
+public record ServerConfig(GameSettings gameSettings, int port, int serverVersion) {
     private static final int MIN_PORT = 1024;
     private static final int MAX_PORT = 65535;
     private static final int DEFAULT_PORT = 8080;
-    private static final int DEFAULT_TURN_TIME_LIMIT = 15000; // 15 seconds
     private static final int DEFAULT_SERVER_VERSION = 1;
 
     /**
      * Creates a ServerConfig with specified parameters.
      *
      * @param port          the server port (1024-65535)
-     * @param mapConfig     the map configuration
-     * @param turnTimeLimit the turn time limit in milliseconds
+     * @param gameSettings     the map configuration
      * @throws IllegalArgumentException if validation fails
      */
-    public ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit, int serverVersion) {
+    public ServerConfig(@NonNull GameSettings gameSettings,int port, int serverVersion) {
         this.port = port;
-        this.mapConfig = mapConfig;
-        this.turnTimeLimit = turnTimeLimit;
+        this.gameSettings = gameSettings;
         this.serverVersion = serverVersion;
         validate();
     }
@@ -37,10 +35,10 @@ public record ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit, int
     /**
      * Creates a ServerConfig with default port and turn time limit.
      *
-     * @param mapConfig the map configuration
+     * @param gameSettings the game settings
      */
-    public ServerConfig(MapConfig mapConfig) {
-        this(DEFAULT_PORT, mapConfig, DEFAULT_TURN_TIME_LIMIT, DEFAULT_SERVER_VERSION);
+    public ServerConfig(GameSettings gameSettings) {
+        this(gameSettings, DEFAULT_PORT, DEFAULT_SERVER_VERSION);
     }
 
     /**
@@ -54,13 +52,8 @@ public record ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit, int
                     String.format("Port must be between %d and %d, got: %d", MIN_PORT, MAX_PORT, port));
         }
 
-        if (mapConfig == null) {
-            throw new IllegalArgumentException("MapConfig cannot be null");
-        }
-
-        if (turnTimeLimit <= 0) {
-            throw new IllegalArgumentException(
-                    String.format("Turn time limit must be positive, got: %d", turnTimeLimit));
+        if (gameSettings == null) {
+            throw new IllegalArgumentException("gameSettings cannot be null");
         }
 
         if (serverVersion <= 0) {
