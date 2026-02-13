@@ -3,7 +3,6 @@ package sl.hackathon.server.communication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.Message;
-import sl.hackathon.server.util.Ansi;
 
 import java.util.List;
 import java.util.Map;
@@ -26,8 +25,6 @@ import static sl.hackathon.server.util.Ansi.*;
 public class ClientRegistry {
     private static final Logger logger = LoggerFactory.getLogger(ClientRegistry.class);
     private static final int MAX_PLAYERS = 2;
-    private static final String PLAYER_1_ID = "player-1";
-    private static final String PLAYER_2_ID = "player-2";
     
     // Maps clientId -> ClientHandler
     private final Map<String, ClientHandler> clientHandlers = new ConcurrentHashMap<>();
@@ -40,16 +37,21 @@ public class ClientRegistry {
     
     /**
      * Registers a new client and assigns a player ID.
-     * Players are assigned in order: player-1, player-2.
+     * Player IDs are provided by the client as part of the connect payload.
      * 
      * @param handler the ClientHandler to register (must not be null)
-     * @return the assigned player ID (player-1 or player-2)
+     * @param playerId the requested player ID (must not be null/blank)
+     * @return the registered player ID
      * @throws IllegalArgumentException if handler is null
      * @throws IllegalStateException if maximum players (2) already registered
      */
-    public String register(ClientHandler handler) {
+    public String register(ClientHandler handler, String playerId) {
         if (handler == null) {
             throw new IllegalArgumentException("ClientHandler cannot be null");
+        }
+
+        if (playerId == null || playerId.isBlank()) {
+            throw new IllegalArgumentException("Player ID cannot be null or blank");
         }
         
         if (clientHandlers.size() >= MAX_PLAYERS) {
@@ -57,24 +59,20 @@ public class ClientRegistry {
         }
         
         String clientId = handler.getClientId();
-        
-        // Assign player ID based on which slots are available
-        String playerId;
-        if (!playerToClient.containsKey(PLAYER_1_ID)) {
-            playerId = PLAYER_1_ID;
-        } else if (!playerToClient.containsKey(PLAYER_2_ID)) {
-            playerId = PLAYER_2_ID;
-        } else {
-            throw new IllegalStateException("Maximum players (2) already registered");
+
+        String normalizedPlayerId = playerId.trim();
+
+        if (playerToClient.containsKey(normalizedPlayerId)) {
+            throw new IllegalStateException("Player ID already registered: " + normalizedPlayerId);
         }
         
         clientHandlers.put(clientId, handler);
-        playerToClient.put(playerId, clientId);
-        clientToPlayer.put(clientId, playerId);
+        playerToClient.put(normalizedPlayerId, clientId);
+        clientToPlayer.put(clientId, normalizedPlayerId);
         
-        logger.info(green("Registered client {} as {}"), clientId, playerId);
+        logger.info(green("Registered client {} as {}"), clientId, normalizedPlayerId);
         
-        return playerId;
+        return normalizedPlayerId;
     }
     
     /**

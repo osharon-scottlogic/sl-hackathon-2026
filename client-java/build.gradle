@@ -55,6 +55,23 @@ test {
     useJUnitPlatform()
 }
 
+jar {
+    manifest {
+        attributes(
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+run {
+    systemProperty 'app.version', project.version
+}
+
+test {
+    systemProperty 'app.version', project.version
+}
+
 sourceSets {
     main {
         java {

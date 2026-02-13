@@ -37,7 +37,7 @@ public class Orchestrator {
     private ServerAPI serverAPI;
     private Bot bot;
     private String playerId;
-    
+
     private MapLayout mapLayout;
     private GameState currentGameState;
     
@@ -49,24 +49,24 @@ public class Orchestrator {
      * 
      * @param serverAPI the server communication API
      * @param bot the bot implementation for decision-making
-     * @param playerId the player ID for this client
      * @throws IllegalArgumentException if any parameter is null
      */
-    public void init(ServerAPI serverAPI, Bot bot, String playerId) {
+    public void init(ServerAPI serverAPI, Bot bot) {
         if (serverAPI == null) {
             throw new IllegalArgumentException("ServerAPI cannot be null");
         }
         if (bot == null) {
             throw new IllegalArgumentException("Bot cannot be null");
         }
+
+        this.serverAPI = serverAPI;
+        this.bot = bot;
+        this.playerId = bot.getPlayerId();
+
         if (playerId == null || playerId.isBlank()) {
             throw new IllegalArgumentException("PlayerId cannot be null or blank");
         }
-        
-        this.serverAPI = serverAPI;
-        this.bot = bot;
-        this.playerId = playerId;
-        
+
         initialized = true;
         
         logger.info("Orchestrator initialized for player: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
@@ -75,30 +75,10 @@ public class Orchestrator {
     public MessageRouter getMessageRouter() {
         return new MessageRouter(
                 new MessageHandlerImpl(this::handleGameStart,
-                        this::handlePlayerAssigned,
                         this::handleNextTurn,
                         this::handleGameEnd,
                         this::handleInvalidOperation,
                         this::handleError));
-    }
-
-    /**
-     * Handles player assignment message from server.
-     * Updates the orchestrator's player ID with the server-assigned value.
-     * 
-     * @param message the player assigned message containing the server-assigned player ID
-     */
-    private void handlePlayerAssigned(PlayerAssignedMessage message) {
-        String assignedPlayerId = message.getPlayerId();
-        logger.info("Received player assignment: " + Ansi.YELLOW + "{}" + Ansi.RESET, assignedPlayerId);
-        
-        // Update player ID with server-assigned value
-        if (assignedPlayerId != null && !assignedPlayerId.isBlank()) {
-            this.playerId = assignedPlayerId;
-            logger.info("Player ID updated to: " + Ansi.YELLOW + "{}" + Ansi.RESET, this.playerId);
-        } else {
-            logger.warn("Received invalid player ID assignment");
-        }
     }
 
     /**
@@ -183,7 +163,7 @@ public class Orchestrator {
         }
         
         Future<Action[]> future = botExecutor.submit(() -> 
-            bot.handleState(playerId, mapLayout, currentGameState, timeLimitMs)
+            bot.handleState(mapLayout, currentGameState, timeLimitMs)
         );
         
         try {

@@ -2,15 +2,17 @@ package sl.hackathon.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sl.hackathon.client.api.MessageHandlerImpl;
 import sl.hackathon.client.api.ServerAPI;
 import sl.hackathon.client.api.TutorialServerApi;
 import sl.hackathon.client.api.WebSocketServerAPI;
 import sl.hackathon.client.messages.MessageRouter;
 import sl.hackathon.client.orchestrator.Orchestrator;
-import sl.hackathon.client.util.Ansi;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
+
+import static sl.hackathon.client.util.Ansi.*;
 
 /**
  * Main entry point for the game client application.
@@ -25,17 +27,22 @@ public class Main {
     // Environment variable names
     private static final String ENV_SERVER_URL = "GAME_SERVER_URL";
     private static final String ENV_PLAYER_ID = "PLAYER_ID";
+
+    private static final String ENV_CLIENT_VERSION = "CLIENT_VERSION";
+    private static final String ENV_EXPECTED_SERVER_VERSION = "EXPECTED_SERVER_VERSION";
+
+    private static final String CLIENT_VERSION_PREFIX = "java-";
     
     public static void main(String[] args) {
-        logger.info("Starting Game Client...");
+        String fullClientVersion = readBuildVersion();
+        logger.info(green("Starting Game Client v{}..."), fullClientVersion);
         
         // Parse server URL from arguments, environment, or use default
         String serverURL = getServerURL(args);
-        logger.info("Server URL: " + Ansi.YELLOW + "{}" + Ansi.RESET, serverURL);
-        
-        // Parse player ID from environment or generate default
-        String playerId = getPlayerId();
-        logger.info("Player ID: " + Ansi.YELLOW + "{}" + Ansi.RESET, playerId);
+        logger.info(green("Server URL: {}"), serverURL);
+
+        String clientVersion = getClientVersion(fullClientVersion);
+        int expectedServerVersion = getExpectedServerVersion(fullClientVersion);
         
         // Create components
         ServerAPI serverAPI = null;
@@ -54,15 +61,20 @@ public class Main {
             
             // Instantiate Bot (using StrategicBot as default)
             Bot bot = new StrategicBot();
-            logger.info("Bot created: " + Ansi.YELLOW + "{}" + Ansi.RESET, bot.getClass().getSimpleName());
+            logger.info(green("{} created and named: {}"), bot.getClass().getSimpleName(), bot.getPlayerId());
 
             // Initialize orchestrator with dependencies
-            orchestrator.init(serverAPI, bot, playerId);
+            orchestrator.init(serverAPI, bot);
             logger.info("Orchestrator initialized");
             
             // Connect to server
-            logger.info("Connecting to server at " + Ansi.YELLOW + "{}" + Ansi.RESET + "...", serverURL);
-            serverAPI.connect(serverURL);
+            String effectiveServerUrl = serverURL;
+            if (!serverURL.startsWith("tutorial")) {
+                effectiveServerUrl = appendConnectPayload(serverURL, bot.getPlayerId(), clientVersion, expectedServerVersion);
+            }
+
+            logger.info(yellow("Connecting to server at {}..."), effectiveServerUrl);
+            serverAPI.connect(effectiveServerUrl);
             logger.info("Successfully connected to server");
             
             // Create latch for keeping main thread alive
@@ -80,7 +92,7 @@ public class Main {
                     finalWebSocketServerAPI.close();
                     logger.info("Client shutdown complete");
                 } catch (Exception e) {
-                    logger.error(Ansi.RED + "Error during shutdown" + Ansi.RESET, e);
+                    logger.error(redBg("Error during shutdown"), e);
                 }
                 shutdownLatch.countDown();
             }));
@@ -94,7 +106,7 @@ public class Main {
             logger.info("Main thread interrupted");
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            logger.error(Ansi.RED + "Fatal error in client" + Ansi.RESET, e);
+            logger.error(redBg("Fatal error in client"), e);
             System.exit(1);
         } finally {
             // Cleanup on exit
@@ -106,7 +118,7 @@ public class Main {
                     serverAPI.close();
                 }
             } catch (Exception e) {
-                logger.error(Ansi.RED + "Error during cleanup" + Ansi.RESET, e);
+                logger.error(redBg("Error during cleanup"), e);
             }
         }
     }
@@ -147,5 +159,87 @@ public class Main {
         
         // Generate default player ID with timestamp for uniqueness
         return "player-" + System.currentTimeMillis();
+    }
+
+    private static String getClientVersion(String fullClientVersion) {
+        String rawOverride = System.getenv(ENV_CLIENT_VERSION);
+        String base = (rawOverride == null || rawOverride.isBlank()) ? fullClientVersion : rawOverride.trim();
+        if (base.isBlank()) {
+            base = "0.0.0";
+        }
+        return CLIENT_VERSION_PREFIX + base;
+    }
+
+    private static int getExpectedServerVersion(String fullClientVersion) {
+        String raw = System.getenv(ENV_EXPECTED_SERVER_VERSION);
+        int defaultExpectedServerVersion = majorVersionOf(fullClientVersion);
+        if (defaultExpectedServerVersion <= 0) {
+            defaultExpectedServerVersion = 1;
+        }
+
+        if (raw == null || raw.isBlank()) {
+            return defaultExpectedServerVersion;
+        }
+
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            logger.warn(yellow("Invalid EXPECTED_SERVER_VERSION value: {} (defaulting to {})"),
+                    raw,
+                    defaultExpectedServerVersion);
+            return defaultExpectedServerVersion;
+        }
+    }
+
+    private static String readBuildVersion() {
+        String fromProperty = System.getProperty("app.version");
+        if (fromProperty != null && !fromProperty.isBlank()) {
+            return fromProperty.trim();
+        }
+
+        Package pkg = Main.class.getPackage();
+        if (pkg == null) {
+            return "0.0.0";
+        }
+
+        String implVersion = pkg.getImplementationVersion();
+        if (implVersion == null || implVersion.isBlank()) {
+            return "0.0.0";
+        }
+        return implVersion.trim();
+    }
+
+    private static int majorVersionOf(String version) {
+        if (version == null) {
+            return 0;
+        }
+        String trimmed = version.trim();
+        if (trimmed.isEmpty()) {
+            return 0;
+        }
+        int dot = trimmed.indexOf('.');
+        String majorPart = dot >= 0 ? trimmed.substring(0, dot) : trimmed;
+        try {
+            return Integer.parseInt(majorPart);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static String appendConnectPayload(String baseUrl, String callsign, String clientVersion, int expectedServerVersion) {
+        String sep = baseUrl.contains("?") ? "&" : "?";
+
+        return baseUrl
+                + sep
+                + "callsign=" + urlEncode(callsign)
+                + "&clientVersion=" + urlEncode(clientVersion)
+                + "&expectedServerVersion=" + expectedServerVersion;
+    }
+
+    private static String urlEncode(String value) {
+        if (value == null) {
+            return "";
+        }
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }

@@ -6,9 +6,10 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.server.dtos.Message;
-import sl.hackathon.server.dtos.PlayerAssignedMessage;
-import sl.hackathon.server.util.Ansi;
+import sl.hackathon.server.dtos.InvalidOperationMessage;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -25,9 +26,14 @@ import static sl.hackathon.server.util.Ansi.*;
 public class WebSocketAdapter {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketAdapter.class);
 
+    private static final String PARAM_CALLSIGN = "callsign";
+    private static final String PARAM_CLIENT_VERSION = "clientVersion";
+    private static final String PARAM_EXPECTED_SERVER_VERSION = "expectedServerVersion";
+
     // Static references set via dependency injection
     @Getter
     private static ClientRegistry clientRegistry;
+    private static int serverVersion;
     private static Consumer<String> onClientConnectCallback;
     private static Consumer<String> onClientDisconnectCallback;
     private static BiConsumer<String, Message> onMessageCallback;
@@ -52,6 +58,11 @@ public class WebSocketAdapter {
     public static void setClientRegistry(ClientRegistry registry) {
         clientRegistry = registry;
         logger.info("ClientRegistry injected into WebSocketAdapter");
+    }
+
+    public static void setServerVersion(int version) {
+        serverVersion = version;
+        logger.info("ServerVersion injected into WebSocketAdapter: {}", version);
     }
 
     /**
@@ -114,10 +125,30 @@ public class WebSocketAdapter {
             closeSession(session);
             return;
         }
+
+        if (serverVersion <= 0) {
+            logger.error("ServerVersion not set or invalid - cannot handle connection");
+            closeSession(session);
+            return;
+        }
         
         try {
             clientHandler = new ClientHandler(session);
             logger.info(green("WebSocket connection opened: {}"), clientHandler.getClientId());
+
+            ConnectPayload connectPayload = parseConnectPayload(session);
+
+            if (connectPayload.expectedServerVersion != serverVersion) {
+                String reason = "Server version mismatch. expected=" + connectPayload.expectedServerVersion + ", actual=" + serverVersion;
+                logger.warn(yellow("Rejecting connection {}: {}"), clientHandler.getClientId(), reason);
+                sendInvalidThenClose(session, connectPayload.callsign, reason);
+                return;
+            }
+
+            logger.info(green("Client connect payload: callsign={}, clientVersion={}, expectedServerVersion={}"),
+                    connectPayload.callsign,
+                    connectPayload.clientVersion,
+                    connectPayload.expectedServerVersion);
             
             // Set message callback to forward messages to onMessageCallback
             clientHandler.setMessageCallback((clientId, message) -> {
@@ -127,13 +158,8 @@ public class WebSocketAdapter {
             });
             
             // Register with ClientRegistry
-            playerId = clientRegistry.register(clientHandler);
+            playerId = clientRegistry.register(clientHandler, connectPayload.callsign);
             logger.info(green("Client {} registered as {}"), clientHandler.getClientId(), playerId);
-            
-            // Send player assignment message to client
-            PlayerAssignedMessage playerAssignedMsg = new PlayerAssignedMessage(playerId);
-            clientHandler.send(playerAssignedMsg);
-            logger.info(green("Sent player assignment to {}"), playerId);
 
             // Invoke connection callback
             if (onClientConnectCallback != null) {
@@ -143,7 +169,10 @@ public class WebSocketAdapter {
         } catch (IllegalStateException e) {
             // Maximum players reached
             logger.warn(yellow("Cannot register client: {}"), e.getMessage());
-            closeSession(session);
+            sendInvalidThenClose(session, safePlayerId(), e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.warn(yellow("Cannot accept connection: {}"), e.getMessage());
+            sendInvalidThenClose(session, safePlayerId(), e.getMessage());
         } catch (Exception e) {
             logger.error(redBg(yellow("Error handling connection open: {}")), e.getMessage(), e);
             closeSession(session);
@@ -230,6 +259,68 @@ public class WebSocketAdapter {
             }
         }
     }
+
+    private void sendInvalidThenClose(Session session, String playerId, String reason) {
+        try {
+            if (clientHandler != null) {
+                clientHandler.send(new InvalidOperationMessage(playerId, reason));
+            }
+        } catch (Exception e) {
+            logger.warn(yellow("Failed to send INVALID_OPERATION before close: {}"), e.getMessage());
+        } finally {
+            closeSession(session);
+        }
+    }
+
+    private String safePlayerId() {
+        return playerId != null && !playerId.isBlank() ? playerId : "unknown";
+    }
+
+    private static String firstParam(Map<String, List<String>> params, String key) {
+        if (params == null) {
+            return null;
+        }
+        List<String> values = params.get(key);
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        return values.get(0);
+    }
+
+    private static ConnectPayload parseConnectPayload(Session session) {
+        Map<String, List<String>> params = session != null ? session.getRequestParameterMap() : null;
+
+        String callsign = firstParam(params, PARAM_CALLSIGN);
+        if (callsign == null || callsign.isBlank()) {
+            throw new IllegalArgumentException("Missing required query param: " + PARAM_CALLSIGN);
+        }
+
+        String clientVersion = firstParam(params, PARAM_CLIENT_VERSION);
+        if (clientVersion == null) {
+            clientVersion = "unknown";
+        }
+
+        String expectedRaw = firstParam(params, PARAM_EXPECTED_SERVER_VERSION);
+        if (expectedRaw == null || expectedRaw.isBlank()) {
+            throw new IllegalArgumentException("Missing required query param: " + PARAM_EXPECTED_SERVER_VERSION);
+        }
+
+        int expectedServerVersion;
+        try {
+            expectedServerVersion = Integer.parseInt(expectedRaw.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid expectedServerVersion: " + expectedRaw);
+        }
+
+        if (expectedServerVersion <= 0) {
+            throw new IllegalArgumentException("expectedServerVersion must be positive, got: " + expectedServerVersion);
+        }
+
+        return new ConnectPayload(callsign.trim(), clientVersion.trim(), expectedServerVersion);
+    }
+
+    private record ConnectPayload(String callsign, String clientVersion, int expectedServerVersion) {
+    }
     
     /**
      * Cleans up instance state.
@@ -247,6 +338,7 @@ public class WebSocketAdapter {
      */
     public static void reset() {
         clientRegistry = null;
+        serverVersion = 0;
         onClientConnectCallback = null;
         onClientDisconnectCallback = null;
         onMessageCallback = null;

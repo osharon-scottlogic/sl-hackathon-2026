@@ -38,7 +38,10 @@ class OrchestratorTest {
         orchestrator = new Orchestrator();
         mockServerAPI = mock(ServerAPI.class);
         mockBot = mock(Bot.class);
+
         testPlayerId = "player-1";
+        when(mockBot.getPlayerId()).thenReturn(testPlayerId);
+
     }
     
     @AfterEach
@@ -61,7 +64,7 @@ class OrchestratorTest {
     
     @Test
     void testInit_successfulInitialization() {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockServerAPI, mockBot);
         
         assertTrue(orchestrator.isInitialized(), "Orchestrator should be initialized");
         assertEquals(testPlayerId, orchestrator.getPlayerId(), "Player ID should match");
@@ -72,7 +75,7 @@ class OrchestratorTest {
     @Test
     void testInit_nullServerAPI_throwsException() {
         assertThrows(IllegalArgumentException.class, () -> 
-            orchestrator.init(null, mockBot, testPlayerId),
+            orchestrator.init(null, mockBot),
             "Should throw exception for null ServerAPI"
         );
     }
@@ -80,30 +83,32 @@ class OrchestratorTest {
     @Test
     void testInit_nullBot_throwsException() {
         assertThrows(IllegalArgumentException.class, () -> 
-            orchestrator.init(mockServerAPI, null, testPlayerId),
+            orchestrator.init(mockServerAPI, null),
             "Should throw exception for null Bot"
         );
     }
     
     @Test
     void testInit_nullPlayerId_throwsException() {
+        when(mockBot.getPlayerId()).thenReturn(null);
         assertThrows(IllegalArgumentException.class, () -> 
-            orchestrator.init(mockServerAPI, mockBot, null),
+            orchestrator.init(mockServerAPI, mockBot),
             "Should throw exception for null playerId"
         );
     }
     
     @Test
     void testInit_blankPlayerId_throwsException() {
+        when(mockBot.getPlayerId()).thenReturn("");
         assertThrows(IllegalArgumentException.class, () -> 
-            orchestrator.init(mockServerAPI, mockBot, ""),
+            orchestrator.init(mockServerAPI, mockBot),
             "Should throw exception for blank playerId"
         );
     }
     
     @Test
     void testHandleGameStart_storesInitialState() {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockServerAPI, mockBot);
         MessageRouter router = orchestrator.getMessageRouter();
         
         // Create start game message
@@ -125,7 +130,7 @@ class OrchestratorTest {
     
     @Test
     void testHandleNextTurn_invokesBot_sendsActions() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockServerAPI, mockBot);
         MessageRouter router = orchestrator.getMessageRouter();
         
         // Set up map layout
@@ -136,7 +141,7 @@ class OrchestratorTest {
         Action[] expectedActions = new Action[]{
             new Action(1, Direction.N)
         };
-        when(mockBot.handleState(eq(testPlayerId), eq(testMap), any(GameState.class), anyLong()))
+        when(mockBot.handleState(eq(testMap), any(GameState.class), anyLong()))
             .thenReturn(expectedActions);
         
         // Create next turn message
@@ -152,7 +157,7 @@ class OrchestratorTest {
         Thread.sleep(100);
         
         // Verify bot was invoked
-        verify(mockBot, timeout(1000)).handleState(eq(testPlayerId), eq(testMap), any(GameState.class), anyLong());
+        verify(mockBot, timeout(1000)).handleState(eq(testMap), any(GameState.class), anyLong());
         
         // Verify actions were sent to server
         verify(mockServerAPI, timeout(1000)).send(testPlayerId, expectedActions);
@@ -160,7 +165,7 @@ class OrchestratorTest {
     
     @Test
     void testHandleNextTurn_differentPlayer_ignored() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockServerAPI, mockBot);
         MessageRouter router = orchestrator.getMessageRouter();
         
         // Create next turn message for different player
@@ -173,18 +178,18 @@ class OrchestratorTest {
         Thread.sleep(100);
         
         // Verify bot was NOT invoked
-        verify(mockBot, never()).handleState(any(), any(), any(), anyLong());
+        verify(mockBot, never()).handleState(any(), any(), anyLong());
         verify(mockServerAPI, never()).send(any(), any());
     }
     
     @Test
     void testHandleNextTurn_botTimeout_sendsFallback() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockServerAPI, mockBot);
         MessageRouter router = orchestrator.getMessageRouter();
         orchestrator.setMapLayout(new MapLayout(new Dimension(10, 10), new Position[0]));
         
         // Set up bot to timeout (sleep longer than allowed)
-        when(mockBot.handleState(any(), any(), any(), anyLong()))
+        when(mockBot.handleState(any(), any(), anyLong()))
             .thenAnswer(invocation -> {
                 Thread.sleep(2000); // Sleep longer than allowed to force a timeout
                 return new Action[0];
@@ -206,12 +211,12 @@ class OrchestratorTest {
     
     @Test
     void testHandleNextTurn_botException_sendsFallback() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockServerAPI, mockBot);
         MessageRouter router = orchestrator.getMessageRouter();
         orchestrator.setMapLayout(new MapLayout(new Dimension(10, 10), new Position[0]));
         
         // Set up bot to throw exception
-        when(mockBot.handleState(any(), any(), any(), anyLong()))
+        when(mockBot.handleState(any(), any(), anyLong()))
             .thenThrow(new RuntimeException("Bot error"));
         
         // Create next turn message
@@ -230,7 +235,7 @@ class OrchestratorTest {
     
     @Test
     void testHandleInvalidOperation_logsWarning() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockServerAPI, mockBot);
         MessageRouter router = orchestrator.getMessageRouter();
         
         // Create invalid operation message
@@ -241,7 +246,7 @@ class OrchestratorTest {
     
     @Test
     void testHandleError_logsError() throws Exception {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockServerAPI, mockBot);
         MessageRouter router = orchestrator.getMessageRouter();
         
         // Create error
@@ -252,7 +257,7 @@ class OrchestratorTest {
     
     @Test
     void testShutdown_cleansUpResources() {
-        orchestrator.init(mockServerAPI, mockBot, testPlayerId);
+        orchestrator.init(mockServerAPI, mockBot);
         
         // Shutdown should not throw
         assertDoesNotThrow(() -> orchestrator.shutdown());

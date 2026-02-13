@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import sl.hackathon.server.dtos.*;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -30,6 +32,8 @@ class WebSocketAdapterTest {
     private ClientRegistry clientRegistry;
     private Session mockSession;
 
+    private static final int SERVER_VERSION = 1;
+
     private AtomicInteger connectCallbackCount;
     private AtomicInteger disconnectCallbackCount;
     private AtomicInteger messageCallbackCount;
@@ -41,12 +45,9 @@ class WebSocketAdapterTest {
     void setUp() {
         adapter = new WebSocketAdapter();
         clientRegistry = new ClientRegistry();
-        
+
         // Setup mock session
-        mockSession = mock(Session.class);
-        RemoteEndpoint.Basic mockRemote = mock(RemoteEndpoint.Basic.class);
-        when(mockSession.getBasicRemote()).thenReturn(mockRemote);
-        when(mockSession.isOpen()).thenReturn(true);
+        mockSession = createSession("player-1");
         
         // Setup callback tracking
         connectCallbackCount = new AtomicInteger(0);
@@ -58,6 +59,7 @@ class WebSocketAdapterTest {
         
         // Configure WebSocketAdapter with registry and callbacks
         WebSocketAdapter.setClientRegistry(clientRegistry);
+        WebSocketAdapter.setServerVersion(SERVER_VERSION);
         WebSocketAdapter.setOnClientConnect(playerId -> {
             connectCallbackCount.incrementAndGet();
             lastConnectedPlayerId.set(playerId);
@@ -94,10 +96,7 @@ class WebSocketAdapterTest {
 
     @Test
     void testOnOpenWithTwoClientsRegistersAsPlayer1AndPlayer2() {
-        Session mockSession2 = mock(Session.class);
-        RemoteEndpoint.Basic mockRemote2 = mock(RemoteEndpoint.Basic.class);
-        when(mockSession2.getBasicRemote()).thenReturn(mockRemote2);
-        when(mockSession2.isOpen()).thenReturn(true);
+        Session mockSession2 = createSession("player-2");
         
         WebSocketAdapter adapter2 = new WebSocketAdapter();
         
@@ -114,15 +113,8 @@ class WebSocketAdapterTest {
 
     @Test
     void testOnOpenWithMaxPlayersReachedClosesConnection() throws Exception {
-        Session mockSession2 = mock(Session.class);
-        Session mockSession3 = mock(Session.class);
-        RemoteEndpoint.Basic mockRemote2 = mock(RemoteEndpoint.Basic.class);
-        RemoteEndpoint.Basic mockRemote3 = mock(RemoteEndpoint.Basic.class);
-        
-        when(mockSession2.getBasicRemote()).thenReturn(mockRemote2);
-        when(mockSession2.isOpen()).thenReturn(true);
-        when(mockSession3.getBasicRemote()).thenReturn(mockRemote3);
-        when(mockSession3.isOpen()).thenReturn(true);
+        Session mockSession2 = createSession("player-2");
+        Session mockSession3 = createSession("player-3");
         
         WebSocketAdapter adapter2 = new WebSocketAdapter();
         WebSocketAdapter adapter3 = new WebSocketAdapter();
@@ -278,7 +270,7 @@ class WebSocketAdapterTest {
         
         // Verify new registry is used
         WebSocketAdapter newAdapter = new WebSocketAdapter();
-        newAdapter.onOpen(mockSession);
+        newAdapter.onOpen(createSession("player-1"));
         
         assertEquals(1, newRegistry.size());
     }
@@ -290,7 +282,7 @@ class WebSocketAdapterTest {
         WebSocketAdapter.setOnClientDisconnect(null);
         WebSocketAdapter.setOnMessage(null);
         
-        adapter.onOpen(mockSession);
+        adapter.onOpen(createSession("player-1"));
         
         String json = "{\"type\":\"START_GAME\",\"playerId\":\"test-player\"}";
         adapter.onMessage(json, mockSession);
@@ -349,10 +341,7 @@ class WebSocketAdapterTest {
 
     @Test
     void testTwoClientFullLifecycle() throws JsonProcessingException {
-        Session mockSession2 = mock(Session.class);
-        RemoteEndpoint.Basic mockRemote2 = mock(RemoteEndpoint.Basic.class);
-        when(mockSession2.getBasicRemote()).thenReturn(mockRemote2);
-        when(mockSession2.isOpen()).thenReturn(true);
+        Session mockSession2 = createSession("player-2");
         
         WebSocketAdapter adapter2 = new WebSocketAdapter();
         
@@ -386,5 +375,20 @@ class WebSocketAdapterTest {
         
         assertEquals(2, disconnectCallbackCount.get());
         assertEquals(0, clientRegistry.size());
+    }
+
+    private static Session createSession(String callsign) {
+        Session session = mock(Session.class);
+        RemoteEndpoint.Basic mockRemote = mock(RemoteEndpoint.Basic.class);
+        when(session.getBasicRemote()).thenReturn(mockRemote);
+        when(session.isOpen()).thenReturn(true);
+
+        Map<String, List<String>> params = Map.of(
+                "callsign", List.of(callsign),
+                "clientVersion", List.of("test"),
+                "expectedServerVersion", List.of(String.valueOf(SERVER_VERSION))
+        );
+        when(session.getRequestParameterMap()).thenReturn(params);
+        return session;
     }
 }

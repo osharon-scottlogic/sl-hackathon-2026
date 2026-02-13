@@ -11,7 +11,6 @@ import sl.hackathon.server.communication.WebSocketAdapter;
 import sl.hackathon.server.communication.WebSocketServerContainer;
 import sl.hackathon.server.dtos.*;
 import sl.hackathon.server.engine.GameEngine;
-import sl.hackathon.server.util.Ansi;
 
 import static sl.hackathon.server.util.Ansi.green;
 import static sl.hackathon.server.util.Ansi.redBg;
@@ -73,6 +72,7 @@ public class GameServer {
         
         // Inject ClientRegistry into WebSocketAdapter
         WebSocketAdapter.setClientRegistry(clientRegistry);
+        WebSocketAdapter.setServerVersion(config.serverVersion());
         
         // Wire client connect/disconnect to GameEngine
         WebSocketAdapter.setOnClientConnect(playerId -> {

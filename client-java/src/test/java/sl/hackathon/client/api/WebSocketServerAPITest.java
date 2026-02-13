@@ -74,11 +74,11 @@ class WebSocketServerAPITest {
         ArgumentCaptor<Consumer<String>> onMessageCaptor = ArgumentCaptor.forClass(Consumer.class);
         verify(transport).setOnMessageReceived(onMessageCaptor.capture());
 
-        String json = MessageCodec.serialize(new PlayerAssignedMessage("player1"));
+        String json = MessageCodec.serialize(new InvalidOperationMessage("player1", "Test"));
         onMessageCaptor.getValue().accept(json);
 
-        ArgumentCaptor<PlayerAssignedMessage> msgCaptor = ArgumentCaptor.forClass(PlayerAssignedMessage.class);
-        verify(messageHandler).handlePlayerAssigned(msgCaptor.capture());
+        ArgumentCaptor<InvalidOperationMessage> msgCaptor = ArgumentCaptor.forClass(InvalidOperationMessage.class);
+        verify(messageHandler).handleInvalidOperation(msgCaptor.capture());
         assertEquals("player1", msgCaptor.getValue().getPlayerId());
     }
     

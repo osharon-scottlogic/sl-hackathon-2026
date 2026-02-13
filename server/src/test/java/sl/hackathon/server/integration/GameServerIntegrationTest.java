@@ -12,9 +12,6 @@ import sl.hackathon.server.engine.GameEngineImpl;
 import sl.hackathon.server.orchestration.GameServer;
 import sl.hackathon.server.orchestration.ServerConfig;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -32,6 +29,9 @@ class GameServerIntegrationTest {
     private static final int TEST_PORT = 18080;
     private static final String SERVER_URL = "ws://localhost:" + TEST_PORT + "/game";
     private static final int TURN_TIME_LIMIT = 5000;
+    private static final int SERVER_VERSION = 1;
+    private static final String CLIENT_1_ID = "player-1";
+    private static final String CLIENT_2_ID = "player-2";
     
     private GameServer gameServer;
     private Thread serverThread;
@@ -56,7 +56,7 @@ class GameServerIntegrationTest {
             new Position(8, 8)
         };
         MapConfig mapConfig = new MapConfig(dimension, walls, baseLocations);
-        ServerConfig config = new ServerConfig(TEST_PORT, mapConfig, TURN_TIME_LIMIT);
+        ServerConfig config = new ServerConfig(TEST_PORT, mapConfig, TURN_TIME_LIMIT, SERVER_VERSION);
         
         // Create game engine
         GameEngine gameEngine = new GameEngineImpl();
@@ -111,22 +111,13 @@ class GameServerIntegrationTest {
         client1 = new TestWebSocketClient();
         client2 = new TestWebSocketClient();
 
-        Session session1 = client1.connect(SERVER_URL);
-        Session session2 = client2.connect(SERVER_URL);
+        Session session1 = client1.connect(SERVER_URL + "?callsign=" + CLIENT_1_ID + "&clientVersion=test&expectedServerVersion=" + SERVER_VERSION);
+        Session session2 = client2.connect(SERVER_URL + "?callsign=" + CLIENT_2_ID + "&clientVersion=test&expectedServerVersion=" + SERVER_VERSION);
 
         assertNotNull(session1, "Client 1 should connect");
         assertNotNull(session2, "Client 2 should connect");
         assertTrue(session1.isOpen(), "Client 1 session should be open");
         assertTrue(session2.isOpen(), "Client 2 session should be open");
-
-        // Wait for player assigned messages first
-        Message playerMsg1 = client1.waitForMessage(5000);
-        Message playerMsg2 = client2.waitForMessage(5000);
-
-        assertNotNull(playerMsg1, "Client 1 should receive player assignment");
-        assertNotNull(playerMsg2, "Client 2 should receive player assignment");
-        assertInstanceOf(PlayerAssignedMessage.class, playerMsg1);
-        assertInstanceOf(PlayerAssignedMessage.class, playerMsg2);
 
         // Wait for game start message
         Message startMsg1 = client1.waitForMessage(5000);
@@ -167,7 +158,7 @@ class GameServerIntegrationTest {
             NextTurnMessage next1 = (NextTurnMessage) turnMsg1;
             NextTurnMessage next2 = (NextTurnMessage) turnMsg2;
 
-            assertEquals("player-1", next1.getPlayerId(), "Player ID should match");
+            assertEquals(CLIENT_1_ID, next1.getPlayerId(), "Player ID should match");
             assertEquals("player-2", next2.getPlayerId(), "Player ID should match");
             assertNotNull(next1.getGameState(), "Turn message should contain game state");
 

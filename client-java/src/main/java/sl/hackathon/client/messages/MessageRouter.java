@@ -62,10 +62,6 @@ public class MessageRouter {
         
         try {
             switch (message) {
-                case PlayerAssignedMessage msg -> {
-                    logger.info("Routing PlayerAssignedMessage for player: "+Ansi.YELLOW+"{}"+Ansi.RESET, msg.getPlayerId());
-                    messageHandler.handlePlayerAssigned(msg);
-                }
                 case StartGameMessage msg -> {
                     logger.info("Routing StartGameMessage");
                     messageHandler.handleStartGame(msg);
@@ -97,10 +93,6 @@ public class MessageRouter {
 
     public void accept(Message message) {
         routeMessage(message);
-    }
-
-    public void accept(PlayerAssignedMessage message) {
-        messageHandler.handlePlayerAssigned(message);
     }
 
     public void accept(StartGameMessage message) {

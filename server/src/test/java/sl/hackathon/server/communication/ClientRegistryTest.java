@@ -51,24 +51,24 @@ class ClientRegistryTest {
     // ===== REGISTRATION TESTS =====
 
     @Test
-    void testRegisterFirstClientAsPlayer1() {
+    void testRegisterFirstClientWithProvidedPlayerId() {
         ClientHandler handler = new ClientHandler(mockSession1);
-        
-        String playerId = registry.register(handler);
-        
+
+        String playerId = registry.register(handler, "player-1");
+
         assertEquals("player-1", playerId);
         assertEquals(1, registry.size());
         assertFalse(registry.isReady());
     }
 
     @Test
-    void testRegisterSecondClientAsPlayer2() {
+    void testRegisterSecondClientWithProvidedPlayerId() {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
-        
-        String playerId1 = registry.register(handler1);
-        String playerId2 = registry.register(handler2);
-        
+
+        String playerId1 = registry.register(handler1, "player-1");
+        String playerId2 = registry.register(handler2, "player-2");
+
         assertEquals("player-1", playerId1);
         assertEquals("player-2", playerId2);
         assertEquals(2, registry.size());
@@ -78,7 +78,7 @@ class ClientRegistryTest {
     @Test
     void testRegisterNullHandlerThrowsException() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            registry.register(null);
+            registry.register(null, "player-1");
         });
         assertEquals("ClientHandler cannot be null", exception.getMessage());
     }
@@ -89,11 +89,11 @@ class ClientRegistryTest {
         ClientHandler handler2 = new ClientHandler(mockSession2);
         ClientHandler handler3 = new ClientHandler(mockSession3);
         
-        registry.register(handler1);
-        registry.register(handler2);
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
         
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            registry.register(handler3);
+            registry.register(handler3, "player-3");
         });
         assertTrue(exception.getMessage().contains("Maximum players (2) already registered"));
     }
@@ -106,7 +106,7 @@ class ClientRegistryTest {
     @Test
     void testIsReadyWhenOnePlayer() {
         ClientHandler handler = new ClientHandler(mockSession1);
-        registry.register(handler);
+        registry.register(handler, "player-1");
         
         assertFalse(registry.isReady());
     }
@@ -115,9 +115,9 @@ class ClientRegistryTest {
     void testIsReadyWhenTwoPlayers() {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
-        
-        registry.register(handler1);
-        registry.register(handler2);
+
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
         
         assertTrue(registry.isReady());
     }
@@ -129,8 +129,8 @@ class ClientRegistryTest {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
         
-        registry.register(handler1);
-        registry.register(handler2);
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
         
         Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         registry.broadcast(message);
@@ -160,8 +160,8 @@ class ClientRegistryTest {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
         
-        registry.register(handler1);
-        registry.register(handler2);
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
         
         // Make first send fail
         doThrow(new IOException("Network error")).when(mockRemote1).sendText(anyString());
@@ -182,8 +182,8 @@ class ClientRegistryTest {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
         
-        registry.register(handler1);
-        registry.register(handler2);
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
 
         Message message = new StartGameMessage(new GameStart(new MapLayout(new Dimension(10,10), new Position[]{}), new Unit[]{},0L));
         registry.send("player-1", message);
@@ -215,7 +215,7 @@ class ClientRegistryTest {
     @Test
     void testSendWithNullMessageThrowsException() {
         ClientHandler handler = new ClientHandler(mockSession1);
-        registry.register(handler);
+        registry.register(handler, "player-1");
         
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             registry.send("player-1", null);
@@ -230,8 +230,8 @@ class ClientRegistryTest {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
         
-        registry.register(handler1);
-        registry.register(handler2);
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
         
         assertEquals(2, registry.size());
         assertTrue(registry.isReady());
@@ -246,7 +246,7 @@ class ClientRegistryTest {
     @Test
     void testUnregisterNonExistentClient() {
         ClientHandler handler = new ClientHandler(mockSession1);
-        registry.register(handler);
+        registry.register(handler, "player-1");
         
         // Should not throw exception
         assertDoesNotThrow(() -> registry.unregister("non-existent-id"));
@@ -265,14 +265,14 @@ class ClientRegistryTest {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
         
-        registry.register(handler1);
-        registry.register(handler2);
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
         
         registry.unregister(handler1.getClientId());
         
         // Should be able to register a new client as player-1
         ClientHandler handler3 = new ClientHandler(mockSession3);
-        String playerId = registry.register(handler3);
+        String playerId = registry.register(handler3, "player-1");
         
         assertEquals("player-1", playerId);
         assertEquals(2, registry.size());
@@ -284,7 +284,7 @@ class ClientRegistryTest {
     @Test
     void testGetPlayerId() {
         ClientHandler handler = new ClientHandler(mockSession1);
-        String playerId = registry.register(handler);
+        String playerId = registry.register(handler, "player-1");
         
         Optional<String> foundPlayerId = registry.getPlayerId(handler.getClientId());
         
@@ -302,7 +302,7 @@ class ClientRegistryTest {
     @Test
     void testGetClientId() {
         ClientHandler handler = new ClientHandler(mockSession1);
-        registry.register(handler);
+        registry.register(handler, "player-1");
         
         Optional<String> foundClientId = registry.getClientId("player-1");
         
@@ -320,7 +320,7 @@ class ClientRegistryTest {
     @Test
     void testGetHandler() {
         ClientHandler handler = new ClientHandler(mockSession1);
-        registry.register(handler);
+        registry.register(handler, "player-1");
         
         Optional<ClientHandler> foundHandler = registry.getHandler("player-1");
         
@@ -340,8 +340,8 @@ class ClientRegistryTest {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
         
-        registry.register(handler1);
-        registry.register(handler2);
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
         
         List<String> players = registry.getRegisteredPlayers();
         
@@ -363,8 +363,8 @@ class ClientRegistryTest {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
         
-        registry.register(handler1);
-        registry.register(handler2);
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
         
         assertEquals(2, registry.size());
         
@@ -396,10 +396,10 @@ class ClientRegistryTest {
         
         assertEquals(0, registry.size());
         
-        registry.register(handler1);
+        registry.register(handler1, "player-1");
         assertEquals(1, registry.size());
         
-        registry.register(handler2);
+        registry.register(handler2, "player-2");
         assertEquals(2, registry.size());
     }
 
@@ -408,8 +408,8 @@ class ClientRegistryTest {
         ClientHandler handler1 = new ClientHandler(mockSession1);
         ClientHandler handler2 = new ClientHandler(mockSession2);
         
-        registry.register(handler1);
-        registry.register(handler2);
+        registry.register(handler1, "player-1");
+        registry.register(handler2, "player-2");
         
         assertEquals(2, registry.size());
         

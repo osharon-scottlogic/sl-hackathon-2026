@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ServerConfigTest {
     
     private MapConfig validMapConfig;
+    private static final int SERVER_VERSION = 1;
     
     @BeforeEach
     void setUp() {
@@ -30,12 +31,13 @@ class ServerConfigTest {
     @Test
     void constructor_WithValidParameters_CreatesConfig() {
         // Act
-        ServerConfig config = new ServerConfig(8080, validMapConfig, 15000);
+        ServerConfig config = new ServerConfig(8080, validMapConfig, 15000, SERVER_VERSION);
         
         // Assert
         assertEquals(8080, config.port());
         assertEquals(validMapConfig, config.mapConfig());
         assertEquals(15000, config.turnTimeLimit());
+        assertEquals(SERVER_VERSION, config.serverVersion());
     }
     
     @Test
@@ -53,20 +55,20 @@ class ServerConfigTest {
     void validate_WithPortBelowMinimum_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(1023, validMapConfig, 15000));
+            new ServerConfig(1023, validMapConfig, 15000, SERVER_VERSION));
     }
     
     @Test
     void validate_WithPortAboveMaximum_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(65536, validMapConfig, 15000));
+            new ServerConfig(65536, validMapConfig, 15000, SERVER_VERSION));
     }
     
     @Test
     void validate_WithMinimumValidPort_Succeeds() {
         // Act
-        ServerConfig config = new ServerConfig(1024, validMapConfig, 15000);
+        ServerConfig config = new ServerConfig(1024, validMapConfig, 15000, SERVER_VERSION);
         
         // Assert
         assertEquals(1024, config.port());
@@ -75,7 +77,7 @@ class ServerConfigTest {
     @Test
     void validate_WithMaximumValidPort_Succeeds() {
         // Act
-        ServerConfig config = new ServerConfig(65535, validMapConfig, 15000);
+        ServerConfig config = new ServerConfig(65535, validMapConfig, 15000, SERVER_VERSION);
         
         // Assert
         assertEquals(65535, config.port());
@@ -85,27 +87,27 @@ class ServerConfigTest {
     void validate_WithNullMapConfig_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(8080, null, 15000));
+            new ServerConfig(8080, null, 15000, SERVER_VERSION));
     }
     
     @Test
     void validate_WithZeroTurnTimeLimit_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(8080, validMapConfig, 0));
+            new ServerConfig(8080, validMapConfig, 0, SERVER_VERSION));
     }
     
     @Test
     void validate_WithNegativeTurnTimeLimit_ThrowsException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> 
-            new ServerConfig(8080, validMapConfig, -1000));
+            new ServerConfig(8080, validMapConfig, -1000, SERVER_VERSION));
     }
     
     @Test
     void toString_ReturnsConfigDetails() {
         // Arrange
-        ServerConfig config = new ServerConfig(8080, validMapConfig, 15000);
+        ServerConfig config = new ServerConfig(8080, validMapConfig, 15000, SERVER_VERSION);
         
         // Act
         String result = config.toString();

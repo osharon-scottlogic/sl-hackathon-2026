@@ -24,7 +24,7 @@ public class BotTest {
     public void setUp() {
         bot = new StrategicBot();
         emptyMap = new MapLayout(new Dimension(8, 8), new Position[0]);
-        playerId = "player-1";
+        playerId = bot.getPlayerId();
         enemyId = "player-2";
     }
 
@@ -40,7 +40,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         assertTrue(actions.length <= 3, "Should have at most 3 actions");
@@ -54,7 +54,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         assertEquals(0, actions.length);
@@ -65,7 +65,7 @@ public class BotTest {
     public void testEmptyGameState() {
         GameState gameState = new GameState(new Unit[0], 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         assertEquals(0, actions.length);
@@ -82,7 +82,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         assertTrue(actions.length > 0);
@@ -101,7 +101,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         assertTrue(actions.length > 0);
@@ -118,7 +118,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         // Should still generate actions (fallback strategies)
@@ -135,7 +135,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         assertTrue(actions.length > 0);
@@ -160,7 +160,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, mapWithWalls, gameState, 5000);
+        Action[] actions = bot.handleState(mapWithWalls, gameState, 5000);
 
         assertNotNull(actions);
         // Should still generate an action, even if constrained
@@ -175,7 +175,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         // Should not prioritize evasion
@@ -192,12 +192,12 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         // Should not move into collision with enemy
         if (actions.length > 0) {
-            assertFalse(actions[0].direction() == Direction.E, "Should not move East toward enemy");
+            assertNotSame(actions[0].direction(), Direction.E, "Should not move East toward enemy");
         }
     }
 
@@ -212,7 +212,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         // Should prioritize safe moves
@@ -230,7 +230,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         assertTrue(actions.length > 0);
@@ -252,7 +252,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         // Both pawns should take some action
@@ -270,7 +270,7 @@ public class BotTest {
         GameState gameState = new GameState(units, 0L);
 
         long startTime = System.currentTimeMillis();
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 1000); // 1 second timeout
+        Action[] actions = bot.handleState(emptyMap, gameState, 1000); // 1 second timeout
         long elapsed = System.currentTimeMillis() - startTime;
 
         assertNotNull(actions);
@@ -286,7 +286,7 @@ public class BotTest {
         GameState gameState = new GameState(units, 0L);
 
         long startTime = System.currentTimeMillis();
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 100); // 100ms - very tight
+        Action[] actions = bot.handleState(emptyMap, gameState, 100); // 100ms - very tight
         long elapsed = System.currentTimeMillis() - startTime;
 
         assertNotNull(actions);
@@ -303,7 +303,7 @@ public class BotTest {
         GameState gameState = new GameState(units, 0L);
 
         // Very tight time limit should trigger fallback
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 50);
+        Action[] actions = bot.handleState(emptyMap, gameState, 50);
 
         assertNotNull(actions);
         // Should return some fallback actions
@@ -325,7 +325,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, barrierMap, gameState, 5000);
+        Action[] actions = bot.handleState(barrierMap, gameState, 5000);
 
         assertNotNull(actions);
         // Should return fallback actions even when blocked
@@ -343,7 +343,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         // Fallback should try to find a safe action or return empty
@@ -362,7 +362,7 @@ public class BotTest {
 
         // Should not throw exception
         Action[] actions = assertDoesNotThrow(() ->
-            bot.handleState(playerId, emptyMap, gameState, 5000)
+            bot.handleState(emptyMap, gameState, 5000)
         );
 
         assertNotNull(actions);
@@ -377,10 +377,9 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         for (Action action : actions) {
-            assertNotNull(action.unitId());
             assertNotNull(action.direction());
             assertTrue(action.unitId() > 0);
         }
@@ -402,7 +401,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         assertTrue(actions.length > 0);
@@ -427,7 +426,7 @@ public class BotTest {
         GameState gameState = new GameState(units.toArray(new Unit[0]), 0L);
 
         long startTime = System.currentTimeMillis();
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
         long elapsed = System.currentTimeMillis() - startTime;
 
         assertNotNull(actions);
@@ -445,7 +444,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         // Should handle edge cases without crashing
@@ -462,8 +461,8 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions1 = bot.handleState(playerId, emptyMap, gameState, 5000);
-        Action[] actions2 = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions1 = bot.handleState(emptyMap, gameState, 5000);
+        Action[] actions2 = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions1);
         assertNotNull(actions2);
@@ -480,7 +479,7 @@ public class BotTest {
         };
         GameState gameState = new GameState(units, 0L);
 
-        Action[] actions = bot.handleState(playerId, emptyMap, gameState, 5000);
+        Action[] actions = bot.handleState(emptyMap, gameState, 5000);
 
         assertNotNull(actions);
         assertTrue(actions.length > 0);

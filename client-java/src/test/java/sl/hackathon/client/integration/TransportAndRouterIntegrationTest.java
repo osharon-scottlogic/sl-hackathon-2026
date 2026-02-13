@@ -164,17 +164,12 @@ class TransportAndRouterIntegrationTest {
      * Test game handler implementation.
      */
     private static class TestGameHandler implements MessageHandler {
-        
-        private java.util.function.Consumer<PlayerAssignedMessage> playerAssignedCallback;
+
         private java.util.function.Consumer<StartGameMessage> startGameCallback;
         private java.util.function.Consumer<NextTurnMessage> nextTurnCallback;
         private java.util.function.Consumer<EndGameMessage> endGameCallback;
         private java.util.function.Consumer<InvalidOperationMessage> invalidOpCallback;
         private java.util.function.Consumer<Throwable> errorCallback;
-        
-        void setPlayerAssignedCallback(java.util.function.Consumer<PlayerAssignedMessage> callback) {
-            this.playerAssignedCallback = callback;
-        }
         
         void setStartGameCallback(java.util.function.Consumer<StartGameMessage> callback) {
             this.startGameCallback = callback;
@@ -194,13 +189,6 @@ class TransportAndRouterIntegrationTest {
         
         void setErrorCallback(java.util.function.Consumer<Throwable> callback) {
             this.errorCallback = callback;
-        }
-        
-        @Override
-        public void handlePlayerAssigned(PlayerAssignedMessage message) {
-            if (playerAssignedCallback != null) {
-                playerAssignedCallback.accept(message);
-            }
         }
         
         @Override

@@ -11,11 +11,12 @@ import sl.hackathon.server.dtos.MapConfig;
  * - Validate configuration values
  * - Provide default values for optional parameters
  */
-public record ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit) {
+public record ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit, int serverVersion) {
     private static final int MIN_PORT = 1024;
     private static final int MAX_PORT = 65535;
     private static final int DEFAULT_PORT = 8080;
     private static final int DEFAULT_TURN_TIME_LIMIT = 15000; // 15 seconds
+    private static final int DEFAULT_SERVER_VERSION = 1;
 
     /**
      * Creates a ServerConfig with specified parameters.
@@ -25,10 +26,11 @@ public record ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit) {
      * @param turnTimeLimit the turn time limit in milliseconds
      * @throws IllegalArgumentException if validation fails
      */
-    public ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit) {
+    public ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit, int serverVersion) {
         this.port = port;
         this.mapConfig = mapConfig;
         this.turnTimeLimit = turnTimeLimit;
+        this.serverVersion = serverVersion;
         validate();
     }
 
@@ -38,7 +40,7 @@ public record ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit) {
      * @param mapConfig the map configuration
      */
     public ServerConfig(MapConfig mapConfig) {
-        this(DEFAULT_PORT, mapConfig, DEFAULT_TURN_TIME_LIMIT);
+        this(DEFAULT_PORT, mapConfig, DEFAULT_TURN_TIME_LIMIT, DEFAULT_SERVER_VERSION);
     }
 
     /**
@@ -59,6 +61,11 @@ public record ServerConfig(int port, MapConfig mapConfig, int turnTimeLimit) {
         if (turnTimeLimit <= 0) {
             throw new IllegalArgumentException(
                     String.format("Turn time limit must be positive, got: %d", turnTimeLimit));
+        }
+
+        if (serverVersion <= 0) {
+            throw new IllegalArgumentException(
+                    String.format("Server version must be positive, got: %d", serverVersion));
         }
     }
 }

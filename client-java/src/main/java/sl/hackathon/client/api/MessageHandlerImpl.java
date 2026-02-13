@@ -18,19 +18,10 @@ public class MessageHandlerImpl implements MessageHandler {
     // Message handlers (delegated via internal MessageHandler)
     @Setter
     Consumer<StartGameMessage> onGameStart;
-    @Setter Consumer<PlayerAssignedMessage> onPlayerAssigned;
     @Setter Consumer<NextTurnMessage> onNextTurn;
     @Setter Consumer<EndGameMessage> onGameEnd;
     @Setter Consumer<InvalidOperationMessage> onInvalidOperation;
     @Setter Consumer<Throwable> onError;
-
-    @Override
-    public void handlePlayerAssigned(PlayerAssignedMessage message) {
-        logger.info(green("Player assigned: {}"), message.getPlayerId());
-        if (onPlayerAssigned != null) {
-            onPlayerAssigned.accept(message);
-        }
-    }
 
     @Override
     public void handleStartGame(StartGameMessage message) {

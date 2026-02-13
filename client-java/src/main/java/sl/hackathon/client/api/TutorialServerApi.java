@@ -1,6 +1,5 @@
 package sl.hackathon.client.api;
 
-import lombok.Setter;
 import sl.hackathon.client.dtos.Action;
 import sl.hackathon.client.messages.*;
 import sl.hackathon.client.tutorial.TutorialDefinition;
@@ -40,7 +39,6 @@ public class TutorialServerApi implements ServerAPI {
             this.connected = true;
 
             if (messageRouter != null) {
-                messageRouter.accept(new PlayerAssignedMessage(assignedPlayerId));
                 messageRouter.accept(engine.buildStartGameMessage());
                 messageRouter.accept(engine.buildNextTurnMessage());
             }

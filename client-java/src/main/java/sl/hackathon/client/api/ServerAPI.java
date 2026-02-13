@@ -1,8 +1,6 @@
 package sl.hackathon.client.api;
 
 import sl.hackathon.client.dtos.Action;
-import sl.hackathon.client.messages.MessageRouter;
-
 import java.io.IOException;
 
 public interface ServerAPI {

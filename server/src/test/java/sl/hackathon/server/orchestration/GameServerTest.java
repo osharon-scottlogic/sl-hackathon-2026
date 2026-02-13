@@ -30,6 +30,7 @@ class GameServerTest {
     private GameEngine mockEngine;
     private ServerConfig config;
     private GameServer gameServer;
+    private static final int SERVER_VERSION = 1;
     
     // Use random port to avoid "Address already in use" errors between tests
     private static int getAvailablePort() {
@@ -50,7 +51,7 @@ class GameServerTest {
         Position[] walls = new Position[]{new Position(5, 5)};
         Position[] baseLocations = new Position[]{new Position(1, 1), new Position(9, 9)};
         MapConfig mapConfig = new MapConfig(dimension, walls, baseLocations);
-        config = new ServerConfig(getAvailablePort(), mapConfig, 200); // Use random port to avoid conflicts
+        config = new ServerConfig(getAvailablePort(), mapConfig, 200, SERVER_VERSION); // Use random port to avoid conflicts
         
         // Reset static state in WebSocketAdapter
         WebSocketAdapter.reset();

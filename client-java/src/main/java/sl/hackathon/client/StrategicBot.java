@@ -1,5 +1,6 @@
 package sl.hackathon.client;
 
+import lombok.Getter;
 import sl.hackathon.client.dtos.*;
 
 import java.util.*;
@@ -12,8 +13,15 @@ import java.util.stream.Collectors;
 public class StrategicBot implements Bot {
     private static final long DECISION_BUFFER_MS = 1000; // 1 second buffer for safety
 
+    @Getter
+    private final String playerId;
+
+    public StrategicBot() {
+        this.playerId = generatePlayerId();
+    }
+
     @Override
-    public Action[] handleState(String playerId, MapLayout mapLayout, GameState gameState, long timeLimitMs) {
+    public Action[] handleState(MapLayout mapLayout, GameState gameState, long timeLimitMs) {
         long startTime = System.currentTimeMillis();
         long deadline = startTime + timeLimitMs - DECISION_BUFFER_MS;
 
@@ -152,7 +160,7 @@ public class StrategicBot implements Bot {
         Optional<List<Direction>> path = HelperTools.findShortestPath(mapLayout, pawn.position(), goal);
 
         if (path.isPresent() && !path.get().isEmpty()) {
-            Direction nextMove = path.get().get(0);
+            Direction nextMove = path.get().getFirst();
             return new Action(pawn.id(), nextMove);
         }
 
@@ -191,7 +199,7 @@ public class StrategicBot implements Bot {
             if (safestPos.isPresent()) {
                 Optional<List<Direction>> path = HelperTools.findShortestPath(mapLayout, pawn.position(), safestPos.get());
                 if (path.isPresent() && !path.get().isEmpty()) {
-                    return new Action(pawn.id(), path.get().get(0));
+                    return new Action(pawn.id(), path.get().getFirst());
                 }
             }
         }
@@ -212,7 +220,7 @@ public class StrategicBot implements Bot {
         Optional<List<Direction>> path = HelperTools.findShortestPath(mapLayout, pawn.position(), enemy.position());
 
         if (path.isPresent() && !path.get().isEmpty()) {
-            Direction nextMove = path.get().get(0);
+            Direction nextMove = path.get().getFirst();
             return new Action(pawn.id(), nextMove);
         }
 
@@ -235,7 +243,7 @@ public class StrategicBot implements Bot {
         Optional<List<Direction>> path = HelperTools.findShortestPath(mapLayout, pawn.position(), centroid);
 
         if (path.isPresent() && !path.get().isEmpty()) {
-            Direction nextMove = path.get().get(0);
+            Direction nextMove = path.get().getFirst();
             return new Action(pawn.id(), nextMove);
         }
 
@@ -257,7 +265,7 @@ public class StrategicBot implements Bot {
         for (Unit pawn : friendlyPawns) {
             List<Action> pawnActions = groupedByPawn.getOrDefault(pawn.id(), new ArrayList<>());
             if (!pawnActions.isEmpty()) {
-                actionsByPawn.put(pawn.id(), pawnActions.get(0));
+                actionsByPawn.put(pawn.id(), pawnActions.getFirst());
             }
         }
 
@@ -291,5 +299,33 @@ public class StrategicBot implements Bot {
         }
 
         return fallbackActions.toArray(new Action[0]);
+    }
+
+    private static String generatePlayerId() {
+        List<String> colors = List.of(
+            "red", "blue", "green", "yellow", "purple",
+            "orange", "black", "white", "silver", "gold",
+            "crimson", "emerald"
+        );
+
+        List<String> adjectives = List.of(
+            "fast", "brave", "cunning", "mighty", "swift",
+            "wise", "bold", "fierce", "sneaky", "stubborn",
+            "tiny", "fat"
+        );
+
+        List<String> mythicalCreatures = List.of(
+            "unicorn", "dragon", "phoenix", "griffin", "kraken",
+            "hydra", "minotaur", "pegasus", "basilisk", "chimera",
+            "sphinx", "wyvern"
+        );
+
+        java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
+
+        String color = colors.get(random.nextInt(colors.size()));
+        String adjective = adjectives.get(random.nextInt(adjectives.size()));
+        String creature = mythicalCreatures.get(random.nextInt(mythicalCreatures.size()));
+
+        return color + "-" + adjective + "-" + creature;
     }
 }

@@ -10,6 +10,9 @@
 apply plugin: 'java-library'
 apply plugin: 'application'
 
+group = 'sl.hackathon'
+version = '1.0.0'
+
 // Configure the main class for the application
 application {
     mainClass = 'sl.hackathon.server.Main'
@@ -40,7 +43,7 @@ dependencies {
     // Logging - SLF4J + Logback
     implementation 'org.slf4j:slf4j-api:2.0.5'
     implementation 'ch.qos.logback:logback-classic:1.5.13'
-    implementation 'ch.qos.logback:logback-core:1.5.19'
+    implementation 'ch.qos.logback:logback-core:1.5.25'
 
     // Jakarta WebSocket API (Jakarta EE 10)
     implementation 'jakarta.websocket:jakarta.websocket-api:2.1.1'
@@ -61,5 +64,22 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+jar {
+    manifest {
+        attributes(
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+run {
+    systemProperty 'app.version', project.version
+}
+
+test {
+    systemProperty 'app.version', project.version
 }
 

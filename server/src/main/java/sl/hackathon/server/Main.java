@@ -20,17 +20,24 @@ public class Main {
     // Default server configuration
     private static final int DEFAULT_PORT = 8080;
     private static final int DEFAULT_TURN_TIME_LIMIT = 15000; // 15 seconds
-
-    public static void main(String[] args) {
-        logger.info(green("Starting Game Server..."));
-        
+    
+    public static void main(String[] args) {       
         try {
+            String buildVersion = readBuildVersion();
+            
+            logger.info(green("Starting Game Server v{}..."), buildVersion);
+
             // Create map configuration
             MapConfig mapConfig = MapFactory.createMapConfig("map-001.json");
 
+            
+
             // Create game engine + server
             GameServer gameServer = new GameServer(
-                new ServerConfig(DEFAULT_PORT, mapConfig, DEFAULT_TURN_TIME_LIMIT),
+                new ServerConfig(DEFAULT_PORT,
+                    mapConfig,
+                    DEFAULT_TURN_TIME_LIMIT,
+                    majorVersionOf(buildVersion)),
                 new GameEngineImpl()
             );
             logger.info("Game engine initialized and game server created");
@@ -78,6 +85,39 @@ public class Main {
             logger.info("Waiting for game session to complete...");
             gameSessionThread.join();
             logger.info("Game session completed");
+        }
+    }
+
+    private static String readBuildVersion() {
+        String fromProperty = System.getProperty("app.version");
+        if (fromProperty != null && !fromProperty.isBlank()) {
+            return fromProperty.trim();
+        }
+
+        Package pkg = Main.class.getPackage();
+        if (pkg == null) {
+            return "0.0.0";
+        }
+
+        String implVersion = pkg.getImplementationVersion();
+        if (implVersion == null || implVersion.isBlank()) {
+            return "0.0.0";
+        }
+        return implVersion.trim();
+    }
+
+    private static int majorVersionOf(String version) {
+        if (version == null) {
+            return 0;
+        }
+        String trimmed = version.trim();
+        if (trimmed.isEmpty()) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(trimmed.split("\\.")[0]);
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 }

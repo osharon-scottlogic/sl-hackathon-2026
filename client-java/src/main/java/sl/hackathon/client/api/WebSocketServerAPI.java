@@ -1,6 +1,5 @@
 package sl.hackathon.client.api;
 
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sl.hackathon.client.dtos.Action;
